@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日金融資訊儀表板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 每日金融資訊儀表板</h1>
+            <div class="header-controls">
+                <span id="lastUpdate">最後更新：--</span>
+                <button id="refreshBtn" onclick="refreshAllData()">
+                    🔄 更新資訊
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- 殖利率曲線區塊 -->
+            <section class="yield-curves">
+                <div class="card">
+                    <h2>🇺🇸 美國國債殖利率曲線</h2>
+                    <div class="chart-container">
+                        <canvas id="usYieldChart"></canvas>
+                    </div>
+                    <div class="yield-table" id="usYieldTable"></div>
+                </div>
+
+                <div class="card">
+                    <h2>🇪🇺 歐元區國債殖利率曲線</h2>
+                    <div class="chart-container">
+                        <canvas id="euYieldChart"></canvas>
+                    </div>
+                    <div class="yield-table" id="euYieldTable"></div>
+                </div>
+            </section>
+
+            <!-- 美股板塊表現 -->
+            <section class="sectors">
+                <div class="card full-width">
+                    <h2>🏛️ 美國股市板塊當日表現</h2>
+                    <div class="chart-container-large">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
+                    <div class="sector-grid" id="sectorGrid"></div>
+                </div>
+            </section>
+
+            <!-- 重要金融新聞 -->
+            <section class="news">
+                <div class="card full-width">
+                    <h2>📰 重要金融新聞</h2>
+                    <div class="news-container" id="newsContainer">
+                        <div class="loading">載入中...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 市場概況 -->
+            <section class="market-overview">
+                <div class="card full-width">
+                    <h2>📈 市場概況</h2>
+                    <div class="market-grid" id="marketGrid"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>資料來源：Federal Reserve, ECB, Yahoo Finance, Financial News APIs</p>
+            <p>⚠️ 資料僅供參考，不構成投資建議</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
