@@ -179,7 +179,59 @@ class THSRBookingBot:
         """前往訂票頁面"""
         logger.info(f"前往訂票頁面: {self.BOOKING_URL}")
         self.driver.get(self.BOOKING_URL)
-        time.sleep(1)
+        time.sleep(2)
+
+        # 處理「個人資料使用說明」同意彈窗
+        self._handle_privacy_dialog()
+
+    def _handle_privacy_dialog(self):
+        """處理個人資料使用說明同意彈窗"""
+        try:
+            # 嘗試多種方式找到「我同意」按鈕
+            agree_button = None
+
+            # 方法1: 使用 XPath 找包含「我同意」文字的按鈕
+            try:
+                agree_button = self.wait.until(
+                    EC.element_to_be_clickable((
+                        By.XPATH,
+                        "//button[contains(text(), '我同意')] | //a[contains(text(), '我同意')] | //input[@value='我同意']"
+                    ))
+                )
+            except TimeoutException:
+                pass
+
+            # 方法2: 使用 CSS 選擇器找按鈕
+            if not agree_button:
+                try:
+                    agree_button = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        ".btn-confirm, .btn-primary, button.confirm, .swal2-confirm"
+                    )
+                except NoSuchElementException:
+                    pass
+
+            # 方法3: 找所有按鈕，檢查文字
+            if not agree_button:
+                try:
+                    buttons = self.driver.find_elements(By.TAG_NAME, "button")
+                    for btn in buttons:
+                        if "同意" in btn.text:
+                            agree_button = btn
+                            break
+                except Exception:
+                    pass
+
+            # 點擊按鈕
+            if agree_button:
+                agree_button.click()
+                logger.info("已點擊「我同意」按鈕")
+                time.sleep(1)
+            else:
+                logger.info("未發現同意彈窗，繼續執行")
+
+        except Exception as e:
+            logger.warning(f"處理同意彈窗時發生錯誤: {e}")
 
     def _fill_booking_form(self) -> bool:
         """
