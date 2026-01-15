@@ -1,0 +1,15 @@
+# 高鐵搶票機器人依賴套件
+# THSR Ticket Booking Bot Requirements
+
+# 核心依賴
+selenium>=4.15.0
+requests>=2.31.0
+
+# 驗證碼辨識（可選）
+# ddddocr>=1.4.0  # 自動辨識驗證碼
+
+# 2Captcha 服務（可選）
+# 2captcha-python>=1.2.0
+
+# WebDriver 管理（可選，方便自動下載 ChromeDriver）
+webdriver-manager>=4.0.0

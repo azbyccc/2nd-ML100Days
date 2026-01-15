@@ -1,0 +1,31 @@
+{
+  "passenger": {
+    "id_number": "A123456789",
+    "passenger_name": "王小明",
+    "phone": "0912345678",
+    "email": "example@mail.com"
+  },
+  "ticket": {
+    "departure_station": "台北",
+    "arrival_station": "左營",
+    "travel_date": "2026-02-10",
+    "preferred_time": "08:00",
+    "time_range": 60,
+    "train_no": null,
+    "ticket_count": 2,
+    "ticket_type": "adult",
+    "car_class": "standard",
+    "seat_preference": "window"
+  },
+  "bot_config": {
+    "start_time": null,
+    "retry_interval": 500,
+    "max_retries": 100,
+    "accept_alternative": true,
+    "alternative_count": 3,
+    "auto_pay": false,
+    "notification_url": null,
+    "headless": false,
+    "debug": false
+  }
+}
