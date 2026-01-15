@@ -1,30 +1,32 @@
 """
-高鐵訂票核心邏輯
-THSR Booking Core Logic
+高鐵訂票核心邏輯 (新版網站)
+THSR Booking Core Logic (New Website Version)
 """
 
 import logging
 import time
 import requests
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import (
     TimeoutException,
     NoSuchElementException,
-    ElementClickInterceptedException
+    ElementClickInterceptedException,
+    StaleElementReferenceException
 )
 
 from .config import BookingConfig, TicketType, CarClass, SeatPreference
-from .stations import get_station_code
+from .stations import get_station_code, STATIONS
 from .captcha import CaptchaManager
 
 logger = logging.getLogger(__name__)
@@ -51,59 +53,18 @@ class BookingResult:
 
 
 class THSRBookingBot:
-    """高鐵訂票機器人"""
+    """高鐵訂票機器人 (適配新版網站)"""
 
     # 高鐵訂票網站 URL
     BASE_URL = "https://irs.thsrc.com.tw"
     BOOKING_URL = f"{BASE_URL}/IMINT/"
 
-    # 頁面元素定位器
-    LOCATORS = {
-        # 訂票首頁
-        "start_station": (By.NAME, "selectStartStation"),
-        "end_station": (By.NAME, "selectDestinationStation"),
-        "booking_method": (By.NAME, "bookingMethod"),
-        "travel_date": (By.ID, "toTimeInputField"),
-        "travel_time": (By.NAME, "toTimeTable"),
-        "adult_ticket": (By.NAME, "ticketPanel:rows:0:ticketAmount"),
-        "child_ticket": (By.NAME, "ticketPanel:rows:1:ticketAmount"),
-        "senior_ticket": (By.NAME, "ticketPanel:rows:2:ticketAmount"),
-        "disabled_ticket": (By.NAME, "ticketPanel:rows:3:ticketAmount"),
-        "car_class_standard": (By.ID, "BookingS1Form_tripCon_typesoftrip_0"),
-        "car_class_business": (By.ID, "BookingS1Form_tripCon_typesoftrip_1"),
-        "seat_prefer_none": (By.ID, "BookingS1Form_tripCon_seatCon_0"),
-        "seat_prefer_window": (By.ID, "BookingS1Form_tripCon_seatCon_1"),
-        "seat_prefer_aisle": (By.ID, "BookingS1Form_tripCon_seatCon_2"),
-        "captcha_image": (By.ID, "BookingS1Form_homeCaptcha_pass498"),
-        "captcha_input": (By.ID, "securityCode"),
-        "submit_btn": (By.ID, "SubmitButton"),
-
-        # 車次選擇頁
-        "train_radios": (By.NAME, "TrainQueryDataViewPanel:TrainGroup"),
-        "confirm_train_btn": (By.ID, "SubmitButton"),
-        "error_message": (By.CLASS_NAME, "feedbackPanelERROR"),
-
-        # 確認頁面
-        "id_input": (By.ID, "idNumber"),
-        "phone_input": (By.ID, "mobilePhone"),
-        "email_input": (By.ID, "email"),
-        "agree_checkbox": (By.ID, "agree"),
-        "confirm_submit": (By.ID, "isSubmit"),
-
-        # 結果頁面
-        "booking_code": (By.CSS_SELECTOR, ".pnr-code"),
-        "ticket_info": (By.CSS_SELECTOR, ".ticket-info"),
-    }
-
-    # 時間選項對應表
-    TIME_OPTIONS = {
-        "00": "1201A", "01": "1230A", "02": "100A", "03": "130A",
-        "04": "200A", "05": "230A", "06": "300A", "07": "330A",
-        "08": "400A", "09": "430A", "10": "500A", "11": "530A",
-        "12": "600A", "13": "630A", "14": "700A", "15": "730A",
-        "16": "800A", "17": "830A", "18": "900A", "19": "930A",
-        "20": "1000A", "21": "1030A", "22": "1100A", "23": "1130A",
-    }
+    # 車站名稱對應（用於點擊選擇）
+    STATION_NAMES = [
+        "南港", "台北", "板橋", "桃園", "新竹",
+        "苗栗", "台中", "彰化", "雲林", "嘉義",
+        "台南", "左營"
+    ]
 
     def __init__(self, config: BookingConfig):
         """
@@ -124,7 +85,7 @@ class THSRBookingBot:
         options = Options()
 
         if self.config.bot_config.headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
 
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -145,7 +106,7 @@ class THSRBookingBot:
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"}
         )
-        self.wait = WebDriverWait(self.driver, 10)
+        self.wait = WebDriverWait(self.driver, 15)
 
         logger.info("WebDriver 初始化完成")
 
@@ -179,7 +140,7 @@ class THSRBookingBot:
         """前往訂票頁面"""
         logger.info(f"前往訂票頁面: {self.BOOKING_URL}")
         self.driver.get(self.BOOKING_URL)
-        time.sleep(2)
+        time.sleep(3)
 
         # 處理「個人資料使用說明」同意彈窗
         self._handle_privacy_dialog()
@@ -187,169 +148,319 @@ class THSRBookingBot:
     def _handle_privacy_dialog(self):
         """處理個人資料使用說明同意彈窗"""
         try:
+            # 等待彈窗出現
+            time.sleep(1)
+
             # 嘗試多種方式找到「我同意」按鈕
-            agree_button = None
+            agree_selectors = [
+                "//button[contains(text(), '我同意')]",
+                "//button[contains(@class, 'confirm')]",
+                "//button[contains(@class, 'primary')]",
+                "//div[contains(@class, 'modal')]//button",
+                "//button[contains(@class, 'swal2-confirm')]",
+            ]
 
-            # 方法1: 使用 XPath 找包含「我同意」文字的按鈕
-            try:
-                agree_button = self.wait.until(
-                    EC.element_to_be_clickable((
-                        By.XPATH,
-                        "//button[contains(text(), '我同意')] | //a[contains(text(), '我同意')] | //input[@value='我同意']"
-                    ))
-                )
-            except TimeoutException:
-                pass
-
-            # 方法2: 使用 CSS 選擇器找按鈕
-            if not agree_button:
+            for selector in agree_selectors:
                 try:
-                    agree_button = self.driver.find_element(
-                        By.CSS_SELECTOR,
-                        ".btn-confirm, .btn-primary, button.confirm, .swal2-confirm"
-                    )
+                    agree_button = self.driver.find_element(By.XPATH, selector)
+                    if agree_button.is_displayed():
+                        agree_button.click()
+                        logger.info("已點擊「我同意」按鈕")
+                        time.sleep(1)
+                        return
                 except NoSuchElementException:
-                    pass
+                    continue
 
-            # 方法3: 找所有按鈕，檢查文字
-            if not agree_button:
+            # 嘗試找所有按鈕
+            buttons = self.driver.find_elements(By.TAG_NAME, "button")
+            for btn in buttons:
                 try:
-                    buttons = self.driver.find_elements(By.TAG_NAME, "button")
-                    for btn in buttons:
-                        if "同意" in btn.text:
-                            agree_button = btn
-                            break
-                except Exception:
-                    pass
+                    if "同意" in btn.text and btn.is_displayed():
+                        btn.click()
+                        logger.info("已點擊同意按鈕")
+                        time.sleep(1)
+                        return
+                except:
+                    continue
 
-            # 點擊按鈕
-            if agree_button:
-                agree_button.click()
-                logger.info("已點擊「我同意」按鈕")
-                time.sleep(1)
-            else:
-                logger.info("未發現同意彈窗，繼續執行")
+            logger.info("未發現同意彈窗或已自動關閉")
 
         except Exception as e:
             logger.warning(f"處理同意彈窗時發生錯誤: {e}")
 
-    def _fill_booking_form(self) -> bool:
-        """
-        填寫訂票表單
+    def _click_element_by_text(self, text: str, tag: str = "*") -> bool:
+        """透過文字內容點擊元素"""
+        try:
+            element = self.driver.find_element(
+                By.XPATH, f"//{tag}[contains(text(), '{text}')]"
+            )
+            element.click()
+            return True
+        except NoSuchElementException:
+            return False
 
-        Returns:
-            是否填寫成功
+    def _select_station(self, station_type: str, station_name: str) -> bool:
+        """
+        選擇車站（新版網站使用下拉選單）
+
+        Args:
+            station_type: "departure" 或 "arrival"
+            station_name: 車站名稱
         """
         try:
-            ticket = self.config.ticket
+            # 找到對應的選擇器
+            if station_type == "departure":
+                # 點擊出發站選擇器
+                selectors = [
+                    "//div[contains(text(), '出發站')]/..//div[contains(text(), '請選擇')]",
+                    "//div[contains(text(), '出發站')]/following-sibling::div",
+                    "(//div[contains(@class, 'station-selector')])[1]",
+                    "//input[@placeholder='出發站']",
+                    "(//div[contains(@class, 'select')])[1]",
+                ]
+            else:
+                # 點擊到達站選擇器
+                selectors = [
+                    "//div[contains(text(), '到達站')]/..//div[contains(text(), '請選擇')]",
+                    "//div[contains(text(), '到達站')]/following-sibling::div",
+                    "(//div[contains(@class, 'station-selector')])[2]",
+                    "//input[@placeholder='到達站']",
+                    "(//div[contains(@class, 'select')])[2]",
+                ]
 
-            # 選擇出發站
-            start_select = Select(
-                self.wait.until(EC.presence_of_element_located(
-                    self.LOCATORS["start_station"]
-                ))
-            )
-            start_select.select_by_value(get_station_code(ticket.departure_station))
-            logger.info(f"已選擇出發站: {ticket.departure_station}")
+            # 嘗試點擊選擇器
+            clicked = False
+            for selector in selectors:
+                try:
+                    element = self.wait.until(
+                        EC.element_to_be_clickable((By.XPATH, selector))
+                    )
+                    element.click()
+                    clicked = True
+                    logger.info(f"已點擊{station_type}站選擇器")
+                    time.sleep(0.5)
+                    break
+                except:
+                    continue
 
-            # 選擇到達站
-            end_select = Select(
-                self.driver.find_element(*self.LOCATORS["end_station"])
-            )
-            end_select.select_by_value(get_station_code(ticket.arrival_station))
-            logger.info(f"已選擇到達站: {ticket.arrival_station}")
+            if not clicked:
+                # 嘗試用更通用的方式
+                all_divs = self.driver.find_elements(By.TAG_NAME, "div")
+                for div in all_divs:
+                    try:
+                        if "請選擇" in div.text and div.is_displayed():
+                            div.click()
+                            clicked = True
+                            time.sleep(0.5)
+                            break
+                    except:
+                        continue
 
-            # 填寫日期
-            date_input = self.driver.find_element(*self.LOCATORS["travel_date"])
-            date_input.clear()
-            # 格式化日期為 YYYY/MM/DD
-            formatted_date = ticket.travel_date.replace("-", "/")
-            date_input.send_keys(formatted_date)
-            logger.info(f"已填寫日期: {formatted_date}")
+            if not clicked:
+                logger.error(f"無法點擊{station_type}站選擇器")
+                return False
 
-            # 選擇時間
-            time_select = Select(
-                self.driver.find_element(*self.LOCATORS["travel_time"])
-            )
-            time_hour = ticket.get_time_hour()
-            time_value = self.TIME_OPTIONS.get(time_hour, "1201A")
-            time_select.select_by_value(time_value)
-            logger.info(f"已選擇時間: {ticket.preferred_time}")
+            # 等待下拉選單出現並選擇車站
+            time.sleep(0.5)
 
-            # 選擇票種和數量
-            self._select_ticket_count()
+            # 嘗試點擊車站選項
+            station_selectors = [
+                f"//li[contains(text(), '{station_name}')]",
+                f"//div[contains(text(), '{station_name}')]",
+                f"//span[contains(text(), '{station_name}')]",
+                f"//button[contains(text(), '{station_name}')]",
+                f"//*[text()='{station_name}']",
+            ]
 
-            # 選擇車廂類型
-            self._select_car_class()
+            for selector in station_selectors:
+                try:
+                    station_element = self.wait.until(
+                        EC.element_to_be_clickable((By.XPATH, selector))
+                    )
+                    station_element.click()
+                    logger.info(f"已選擇{station_type}站: {station_name}")
+                    time.sleep(0.5)
+                    return True
+                except:
+                    continue
 
-            # 選擇座位偏好
-            self._select_seat_preference()
+            logger.error(f"無法選擇{station_type}站: {station_name}")
+            return False
 
+        except Exception as e:
+            logger.error(f"選擇車站失敗: {e}")
+            return False
+
+    def _select_date(self) -> bool:
+        """選擇乘車日期"""
+        try:
+            travel_date = self.config.ticket.travel_date
+
+            # 嘗試找到日期選擇器
+            date_selectors = [
+                "//div[contains(text(), '出發日期')]/following-sibling::div",
+                "//input[@type='date']",
+                "//div[contains(@class, 'date')]//input",
+                "//div[contains(text(), '出發日期')]/..//input",
+            ]
+
+            for selector in date_selectors:
+                try:
+                    date_element = self.driver.find_element(By.XPATH, selector)
+                    date_element.click()
+                    time.sleep(0.5)
+
+                    # 清除並輸入日期
+                    date_element.send_keys(Keys.CONTROL + "a")
+                    date_element.send_keys(travel_date.replace("-", "/"))
+                    logger.info(f"已選擇日期: {travel_date}")
+                    return True
+                except:
+                    continue
+
+            # 如果找不到輸入框，可能需要用日曆選擇器
+            logger.warning("使用預設日期")
             return True
 
         except Exception as e:
-            logger.error(f"填寫表單失敗: {e}")
+            logger.error(f"選擇日期失敗: {e}")
             return False
 
-    def _select_ticket_count(self):
-        """選擇票種和數量"""
-        ticket = self.config.ticket
-        count = str(ticket.ticket_count)
-
-        # 根據票種選擇對應的下拉選單
-        ticket_type_map = {
-            TicketType.ADULT: "adult_ticket",
-            TicketType.CHILD: "child_ticket",
-            TicketType.SENIOR: "senior_ticket",
-            TicketType.DISABLED: "disabled_ticket",
-        }
-
-        locator_key = ticket_type_map.get(ticket.ticket_type, "adult_ticket")
-        ticket_select = Select(
-            self.driver.find_element(*self.LOCATORS[locator_key])
-        )
-        ticket_select.select_by_value(count)
-        logger.info(f"已選擇票種: {ticket.ticket_type.value}, 數量: {count}")
-
-    def _select_car_class(self):
-        """選擇車廂類型"""
-        car_class = self.config.ticket.car_class
-
-        if car_class == CarClass.BUSINESS:
-            element = self.driver.find_element(*self.LOCATORS["car_class_business"])
-        else:
-            element = self.driver.find_element(*self.LOCATORS["car_class_standard"])
-
-        element.click()
-        logger.info(f"已選擇車廂: {car_class.value}")
-
-    def _select_seat_preference(self):
-        """選擇座位偏好"""
-        seat_pref = self.config.ticket.seat_preference
-
-        locator_map = {
-            SeatPreference.NONE: "seat_prefer_none",
-            SeatPreference.WINDOW: "seat_prefer_window",
-            SeatPreference.AISLE: "seat_prefer_aisle",
-        }
-
-        locator_key = locator_map.get(seat_pref, "seat_prefer_none")
-        element = self.driver.find_element(*self.LOCATORS[locator_key])
-        element.click()
-        logger.info(f"已選擇座位偏好: {seat_pref.value}")
-
-    def _solve_captcha(self) -> bool:
-        """
-        解析並輸入驗證碼
-
-        Returns:
-            是否成功
-        """
+    def _select_time(self) -> bool:
+        """選擇出發時間"""
         try:
-            # 取得驗證碼圖片
-            captcha_img = self.wait.until(
-                EC.presence_of_element_located(self.LOCATORS["captcha_image"])
-            )
+            preferred_time = self.config.ticket.preferred_time
+
+            # 嘗試找到時間選擇器
+            time_selectors = [
+                "//div[contains(text(), '出發時間')]/..//div[contains(text(), '請選擇')]",
+                "//div[contains(text(), '出發時間')]/following-sibling::div",
+                "(//div[contains(@class, 'time-selector')])",
+            ]
+
+            clicked = False
+            for selector in time_selectors:
+                try:
+                    time_element = self.wait.until(
+                        EC.element_to_be_clickable((By.XPATH, selector))
+                    )
+                    time_element.click()
+                    clicked = True
+                    time.sleep(0.5)
+                    break
+                except:
+                    continue
+
+            if clicked:
+                # 選擇對應的時間
+                hour = int(preferred_time.split(":")[0])
+                # 轉換為高鐵時間選項格式
+                time_options = [
+                    f"{hour:02d}:00", f"{hour}:00",
+                    f"{hour:02d}:30", f"{hour}:30"
+                ]
+
+                for time_opt in time_options:
+                    try:
+                        time_option = self.driver.find_element(
+                            By.XPATH, f"//*[contains(text(), '{time_opt}')]"
+                        )
+                        time_option.click()
+                        logger.info(f"已選擇時間: {time_opt}")
+                        return True
+                    except:
+                        continue
+
+            logger.warning("使用預設時間")
+            return True
+
+        except Exception as e:
+            logger.error(f"選擇時間失敗: {e}")
+            return True  # 時間選擇失敗不影響繼續
+
+    def _select_ticket_count(self) -> bool:
+        """選擇票數"""
+        try:
+            ticket_count = self.config.ticket.ticket_count
+            ticket_type = self.config.ticket.ticket_type
+
+            # 票種對應的標籤文字
+            type_labels = {
+                TicketType.ADULT: "全票",
+                TicketType.CHILD: "孩童票",
+                TicketType.SENIOR: "敬老票",
+                TicketType.DISABLED: "愛心票",
+            }
+
+            label = type_labels.get(ticket_type, "全票")
+
+            # 找到對應的數量選擇器
+            # 新版網站可能使用 +/- 按鈕或下拉選單
+            try:
+                # 嘗試找到數量輸入框或選擇器
+                count_element = self.driver.find_element(
+                    By.XPATH, f"//div[contains(text(), '{label}')]/..//input"
+                )
+                count_element.clear()
+                count_element.send_keys(str(ticket_count))
+                logger.info(f"已選擇票數: {label} x {ticket_count}")
+                return True
+            except:
+                pass
+
+            # 嘗試使用 + 按鈕增加數量
+            try:
+                for _ in range(ticket_count - 1):  # 預設已經是 1
+                    plus_btn = self.driver.find_element(
+                        By.XPATH, f"//div[contains(text(), '{label}')]/..//button[contains(text(), '+')]"
+                    )
+                    plus_btn.click()
+                    time.sleep(0.2)
+                logger.info(f"已選擇票數: {label} x {ticket_count}")
+                return True
+            except:
+                pass
+
+            logger.warning("使用預設票數")
+            return True
+
+        except Exception as e:
+            logger.error(f"選擇票數失敗: {e}")
+            return True
+
+    def _input_captcha(self) -> bool:
+        """輸入驗證碼"""
+        try:
+            # 找到驗證碼圖片
+            captcha_img_selectors = [
+                "//img[contains(@src, 'captcha')]",
+                "//img[contains(@alt, '驗證碼')]",
+                "//div[contains(@class, 'captcha')]//img",
+                "//img[contains(@class, 'captcha')]",
+            ]
+
+            captcha_img = None
+            for selector in captcha_img_selectors:
+                try:
+                    captcha_img = self.wait.until(
+                        EC.presence_of_element_located((By.XPATH, selector))
+                    )
+                    break
+                except:
+                    continue
+
+            if not captcha_img:
+                # 嘗試找所有圖片
+                images = self.driver.find_elements(By.TAG_NAME, "img")
+                for img in images:
+                    src = img.get_attribute("src") or ""
+                    if "captcha" in src.lower() or "security" in src.lower():
+                        captcha_img = img
+                        break
+
+            if not captcha_img:
+                logger.error("找不到驗證碼圖片")
+                return False
 
             # 截取驗證碼圖片
             captcha_data = captcha_img.screenshot_as_png
@@ -358,132 +469,237 @@ class THSRBookingBot:
             captcha_text = self.captcha_manager.solve(captcha_data)
             logger.info(f"驗證碼: {captcha_text}")
 
-            # 輸入驗證碼
-            captcha_input = self.driver.find_element(*self.LOCATORS["captcha_input"])
-            captcha_input.clear()
-            captcha_input.send_keys(captcha_text)
+            # 找到驗證碼輸入框
+            captcha_input_selectors = [
+                "//input[contains(@placeholder, '驗證碼')]",
+                "//input[contains(@name, 'captcha')]",
+                "//input[contains(@id, 'captcha')]",
+                "//input[contains(@id, 'security')]",
+                "//div[contains(@class, 'captcha')]//input",
+            ]
 
-            return True
+            captcha_input = None
+            for selector in captcha_input_selectors:
+                try:
+                    captcha_input = self.driver.find_element(By.XPATH, selector)
+                    break
+                except:
+                    continue
+
+            if not captcha_input:
+                # 找圖片旁邊的輸入框
+                inputs = self.driver.find_elements(By.TAG_NAME, "input")
+                for inp in inputs:
+                    input_type = inp.get_attribute("type") or ""
+                    if input_type == "text" and inp.is_displayed():
+                        placeholder = inp.get_attribute("placeholder") or ""
+                        if "驗證" in placeholder or "輸入" in placeholder:
+                            captcha_input = inp
+                            break
+
+            if captcha_input:
+                captcha_input.clear()
+                captcha_input.send_keys(captcha_text)
+                logger.info("已輸入驗證碼")
+                return True
+            else:
+                logger.error("找不到驗證碼輸入框")
+                return False
 
         except Exception as e:
             logger.error(f"驗證碼處理失敗: {e}")
             return False
 
-    def _submit_booking_form(self) -> bool:
-        """
-        提交訂票表單
-
-        Returns:
-            是否成功（進入車次選擇頁面）
-        """
+    def _fill_booking_form(self) -> bool:
+        """填寫訂票表單（新版網站）"""
         try:
-            submit_btn = self.driver.find_element(*self.LOCATORS["submit_btn"])
-            submit_btn.click()
-            logger.info("已提交訂票表單")
+            ticket = self.config.ticket
 
-            # 等待頁面載入
-            time.sleep(2)
-
-            # 檢查是否有錯誤訊息
-            try:
-                error_elem = self.driver.find_element(*self.LOCATORS["error_message"])
-                error_text = error_elem.text
-                logger.warning(f"訂票表單錯誤: {error_text}")
+            # 1. 選擇出發站
+            logger.info("正在選擇出發站...")
+            if not self._select_station("departure", ticket.departure_station):
                 return False
-            except NoSuchElementException:
-                pass
+            time.sleep(0.5)
 
-            # 檢查是否進入車次選擇頁面
-            try:
-                self.wait.until(
-                    EC.presence_of_element_located(self.LOCATORS["train_radios"])
-                )
-                logger.info("成功進入車次選擇頁面")
-                return True
-            except TimeoutException:
-                logger.warning("未能進入車次選擇頁面")
+            # 2. 選擇到達站
+            logger.info("正在選擇到達站...")
+            if not self._select_station("arrival", ticket.arrival_station):
                 return False
+            time.sleep(0.5)
+
+            # 3. 選擇日期
+            logger.info("正在選擇日期...")
+            self._select_date()
+            time.sleep(0.5)
+
+            # 4. 選擇時間
+            logger.info("正在選擇時間...")
+            self._select_time()
+            time.sleep(0.5)
+
+            # 5. 選擇票數
+            logger.info("正在選擇票數...")
+            self._select_ticket_count()
+            time.sleep(0.5)
+
+            # 6. 輸入驗證碼
+            logger.info("正在處理驗證碼...")
+            if not self._input_captcha():
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"填寫表單失敗: {e}")
+            return False
+
+    def _submit_booking_form(self) -> bool:
+        """提交訂票表單"""
+        try:
+            # 找到「開始查詢」按鈕
+            submit_selectors = [
+                "//button[contains(text(), '開始查詢')]",
+                "//button[contains(text(), '查詢')]",
+                "//button[contains(@class, 'submit')]",
+                "//button[contains(@class, 'primary')]",
+                "//input[@type='submit']",
+            ]
+
+            for selector in submit_selectors:
+                try:
+                    submit_btn = self.wait.until(
+                        EC.element_to_be_clickable((By.XPATH, selector))
+                    )
+                    submit_btn.click()
+                    logger.info("已點擊「開始查詢」按鈕")
+                    time.sleep(3)
+                    return True
+                except:
+                    continue
+
+            # 嘗試找所有按鈕
+            buttons = self.driver.find_elements(By.TAG_NAME, "button")
+            for btn in buttons:
+                if "查詢" in btn.text and btn.is_displayed():
+                    btn.click()
+                    logger.info("已點擊查詢按鈕")
+                    time.sleep(3)
+                    return True
+
+            logger.error("找不到提交按鈕")
+            return False
 
         except Exception as e:
             logger.error(f"提交表單失敗: {e}")
             return False
 
     def _select_train(self) -> Optional[Dict[str, Any]]:
-        """
-        選擇車次
-
-        Returns:
-            選擇的車次資訊
-        """
+        """選擇車次"""
         try:
-            # 取得所有車次選項
-            train_radios = self.driver.find_elements(*self.LOCATORS["train_radios"])
+            time.sleep(2)
 
-            if not train_radios:
-                logger.warning("沒有找到可用車次")
-                return None
+            # 找到車次列表
+            train_selectors = [
+                "//input[@type='radio']",
+                "//div[contains(@class, 'train-item')]",
+                "//tr[contains(@class, 'train')]//input",
+            ]
 
-            # 選擇第一個可用車次
-            train_radios[0].click()
-            logger.info("已選擇車次")
-
-            # 取得車次資訊（從頁面解析）
-            train_info = self._parse_train_info()
+            for selector in train_selectors:
+                try:
+                    trains = self.driver.find_elements(By.XPATH, selector)
+                    if trains:
+                        trains[0].click()
+                        logger.info("已選擇第一個可用車次")
+                        time.sleep(1)
+                        break
+                except:
+                    continue
 
             # 點擊確認按鈕
-            confirm_btn = self.driver.find_element(*self.LOCATORS["confirm_train_btn"])
-            confirm_btn.click()
-            logger.info("已確認車次選擇")
+            confirm_selectors = [
+                "//button[contains(text(), '確認')]",
+                "//button[contains(text(), '下一步')]",
+                "//input[@type='submit']",
+            ]
 
-            time.sleep(2)
-            return train_info
+            for selector in confirm_selectors:
+                try:
+                    confirm_btn = self.driver.find_element(By.XPATH, selector)
+                    if confirm_btn.is_displayed():
+                        confirm_btn.click()
+                        logger.info("已確認車次選擇")
+                        time.sleep(2)
+                        break
+                except:
+                    continue
+
+            return {
+                "departure_station": self.config.ticket.departure_station,
+                "arrival_station": self.config.ticket.arrival_station,
+                "travel_date": self.config.ticket.travel_date,
+            }
 
         except Exception as e:
             logger.error(f"選擇車次失敗: {e}")
             return None
 
-    def _parse_train_info(self) -> Dict[str, Any]:
-        """解析車次資訊"""
-        # 簡化版本，實際需要從頁面解析
-        return {
-            "departure_station": self.config.ticket.departure_station,
-            "arrival_station": self.config.ticket.arrival_station,
-            "travel_date": self.config.ticket.travel_date,
-        }
-
     def _fill_passenger_info(self) -> bool:
-        """
-        填寫乘客資訊
-
-        Returns:
-            是否成功
-        """
+        """填寫乘客資訊"""
         try:
             passenger = self.config.passenger
 
             # 填寫身分證字號
-            id_input = self.wait.until(
-                EC.presence_of_element_located(self.LOCATORS["id_input"])
-            )
-            id_input.clear()
-            id_input.send_keys(passenger.id_number)
-            logger.info("已填寫身分證字號")
+            id_selectors = [
+                "//input[contains(@placeholder, '身分證')]",
+                "//input[contains(@name, 'id')]",
+                "//input[contains(@id, 'id')]",
+            ]
+
+            for selector in id_selectors:
+                try:
+                    id_input = self.driver.find_element(By.XPATH, selector)
+                    id_input.clear()
+                    id_input.send_keys(passenger.id_number)
+                    logger.info("已填寫身分證字號")
+                    break
+                except:
+                    continue
 
             # 填寫手機號碼
-            phone_input = self.driver.find_element(*self.LOCATORS["phone_input"])
-            phone_input.clear()
-            phone_input.send_keys(passenger.phone)
-            logger.info("已填寫手機號碼")
+            phone_selectors = [
+                "//input[contains(@placeholder, '手機')]",
+                "//input[contains(@name, 'phone')]",
+                "//input[contains(@name, 'mobile')]",
+            ]
+
+            for selector in phone_selectors:
+                try:
+                    phone_input = self.driver.find_element(By.XPATH, selector)
+                    phone_input.clear()
+                    phone_input.send_keys(passenger.phone)
+                    logger.info("已填寫手機號碼")
+                    break
+                except:
+                    continue
 
             # 填寫 Email（如果有）
             if passenger.email:
-                try:
-                    email_input = self.driver.find_element(*self.LOCATORS["email_input"])
-                    email_input.clear()
-                    email_input.send_keys(passenger.email)
-                    logger.info("已填寫 Email")
-                except NoSuchElementException:
-                    pass
+                email_selectors = [
+                    "//input[contains(@placeholder, 'email')]",
+                    "//input[contains(@type, 'email')]",
+                    "//input[contains(@name, 'email')]",
+                ]
+
+                for selector in email_selectors:
+                    try:
+                        email_input = self.driver.find_element(By.XPATH, selector)
+                        email_input.clear()
+                        email_input.send_keys(passenger.email)
+                        logger.info("已填寫 Email")
+                        break
+                    except:
+                        continue
 
             return True
 
@@ -492,41 +708,63 @@ class THSRBookingBot:
             return False
 
     def _confirm_booking(self) -> Optional[str]:
-        """
-        確認訂票
-
-        Returns:
-            訂票代碼
-        """
+        """確認訂票"""
         try:
             # 勾選同意條款
-            try:
-                agree_checkbox = self.driver.find_element(*self.LOCATORS["agree_checkbox"])
-                if not agree_checkbox.is_selected():
-                    agree_checkbox.click()
-                    logger.info("已勾選同意條款")
-            except NoSuchElementException:
-                pass
+            checkbox_selectors = [
+                "//input[@type='checkbox']",
+                "//input[contains(@name, 'agree')]",
+            ]
+
+            for selector in checkbox_selectors:
+                try:
+                    checkbox = self.driver.find_element(By.XPATH, selector)
+                    if not checkbox.is_selected():
+                        checkbox.click()
+                        logger.info("已勾選同意條款")
+                    break
+                except:
+                    continue
 
             # 點擊確認按鈕
-            confirm_btn = self.driver.find_element(*self.LOCATORS["confirm_submit"])
-            confirm_btn.click()
-            logger.info("已提交訂票確認")
+            confirm_selectors = [
+                "//button[contains(text(), '確認')]",
+                "//button[contains(text(), '完成訂票')]",
+                "//button[contains(text(), '送出')]",
+                "//input[@type='submit']",
+            ]
 
-            # 等待結果頁面
-            time.sleep(3)
+            for selector in confirm_selectors:
+                try:
+                    confirm_btn = self.driver.find_element(By.XPATH, selector)
+                    if confirm_btn.is_displayed():
+                        confirm_btn.click()
+                        logger.info("已點擊確認按鈕")
+                        time.sleep(3)
+                        break
+                except:
+                    continue
 
-            # 取得訂票代碼
-            try:
-                booking_code_elem = self.wait.until(
-                    EC.presence_of_element_located(self.LOCATORS["booking_code"])
-                )
-                booking_code = booking_code_elem.text.strip()
-                logger.info(f"訂票成功！訂票代碼: {booking_code}")
-                return booking_code
-            except TimeoutException:
-                logger.error("無法取得訂票代碼")
-                return None
+            # 嘗試取得訂票代碼
+            code_selectors = [
+                "//div[contains(@class, 'pnr')]",
+                "//span[contains(@class, 'code')]",
+                "//*[contains(text(), '訂位代號')]",
+            ]
+
+            for selector in code_selectors:
+                try:
+                    code_element = self.wait.until(
+                        EC.presence_of_element_located((By.XPATH, selector))
+                    )
+                    booking_code = code_element.text.strip()
+                    if booking_code:
+                        logger.info(f"訂票成功！訂票代碼: {booking_code}")
+                        return booking_code
+                except:
+                    continue
+
+            return None
 
         except Exception as e:
             logger.error(f"確認訂票失敗: {e}")
@@ -552,12 +790,7 @@ class THSRBookingBot:
             logger.error(f"通知發送失敗: {e}")
 
     def run(self) -> BookingResult:
-        """
-        執行訂票流程
-
-        Returns:
-            訂票結果
-        """
+        """執行訂票流程"""
         try:
             logger.info("=" * 50)
             logger.info("高鐵搶票機器人啟動")
@@ -583,12 +816,6 @@ class THSRBookingBot:
                 # 填寫表單
                 if not self._fill_booking_form():
                     logger.warning("填寫表單失敗，重試中...")
-                    time.sleep(retry_interval)
-                    continue
-
-                # 處理驗證碼
-                if not self._solve_captcha():
-                    logger.warning("驗證碼處理失敗，重試中...")
                     time.sleep(retry_interval)
                     continue
 
