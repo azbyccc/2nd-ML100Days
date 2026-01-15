@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高鐵搶票機器人</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .status-card {
+            display: none;
+        }
+
+        .status-card.active {
+            display: block;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-indicator.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-indicator.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-indicator.idle {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .booking-code {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            padding: 20px;
+            background: #d4edda;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: "Courier New", monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚄 高鐵搶票機器人</h1>
+
+        <!-- 乘客資訊 -->
+        <div class="card">
+            <h2 class="card-title">👤 乘客資訊</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">身分證字號</label>
+                    <input type="text" id="id_number" placeholder="A123456789" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label class="required">乘客姓名</label>
+                    <input type="text" id="passenger_name" placeholder="王小明">
+                </div>
+                <div class="form-group">
+                    <label class="required">聯絡電話</label>
+                    <input type="tel" id="phone" placeholder="0912345678">
+                </div>
+                <div class="form-group">
+                    <label>電子郵件</label>
+                    <input type="email" id="email" placeholder="example@mail.com">
+                </div>
+            </div>
+        </div>
+
+        <!-- 車票資訊 -->
+        <div class="card">
+            <h2 class="card-title">🎫 車票資訊</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="required">出發站</label>
+                    <select id="departure_station">
+                        <option value="南港">南港</option>
+                        <option value="台北" selected>台北</option>
+                        <option value="板橋">板橋</option>
+                        <option value="桃園">桃園</option>
+                        <option value="新竹">新竹</option>
+                        <option value="苗栗">苗栗</option>
+                        <option value="台中">台中</option>
+                        <option value="彰化">彰化</option>
+                        <option value="雲林">雲林</option>
+                        <option value="嘉義">嘉義</option>
+                        <option value="台南">台南</option>
+                        <option value="左營">左營</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="required">到達站</label>
+                    <select id="arrival_station">
+                        <option value="南港">南港</option>
+                        <option value="台北">台北</option>
+                        <option value="板橋">板橋</option>
+                        <option value="桃園">桃園</option>
+                        <option value="新竹">新竹</option>
+                        <option value="苗栗">苗栗</option>
+                        <option value="台中">台中</option>
+                        <option value="彰化">彰化</option>
+                        <option value="雲林">雲林</option>
+                        <option value="嘉義">嘉義</option>
+                        <option value="台南">台南</option>
+                        <option value="左營" selected>左營</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="required">乘車日期</label>
+                    <input type="date" id="travel_date">
+                </div>
+                <div class="form-group">
+                    <label class="required">偏好時間</label>
+                    <input type="time" id="preferred_time" value="08:00">
+                </div>
+                <div class="form-group">
+                    <label class="required">購票張數</label>
+                    <select id="ticket_count">
+                        <option value="1">1 張</option>
+                        <option value="2">2 張</option>
+                        <option value="3">3 張</option>
+                        <option value="4">4 張</option>
+                        <option value="5">5 張</option>
+                        <option value="6">6 張</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>票種</label>
+                    <select id="ticket_type">
+                        <option value="adult">成人</option>
+                        <option value="child">孩童</option>
+                        <option value="senior">敬老</option>
+                        <option value="disabled">愛心</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>車廂類型</label>
+                    <select id="car_class">
+                        <option value="standard">標準車廂</option>
+                        <option value="business">商務車廂</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>座位偏好</label>
+                    <select id="seat_preference">
+                        <option value="none">無偏好</option>
+                        <option value="window">靠窗</option>
+                        <option value="aisle">靠走道</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 進階設定 -->
+        <div class="card">
+            <h2 class="card-title">⚙️ 進階設定</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>最大重試次數</label>
+                    <input type="number" id="max_retries" value="50" min="1" max="200">
+                </div>
+                <div class="form-group">
+                    <label>重試間隔 (毫秒)</label>
+                    <input type="number" id="retry_interval" value="500" min="100" max="5000">
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="headless">
+                        <label for="headless" style="margin-bottom: 0;">無頭模式（不顯示瀏覽器）</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="startBtn" onclick="startBooking()">
+                    🚀 開始搶票
+                </button>
+                <button class="btn btn-danger" id="stopBtn" onclick="stopBooking()" disabled>
+                    ⏹️ 停止
+                </button>
+            </div>
+        </div>
+
+        <!-- 執行狀態 -->
+        <div class="card status-card" id="statusCard">
+            <h2 class="card-title">📊 執行狀態</h2>
+
+            <div class="status-indicator idle" id="statusIndicator">
+                <div class="spinner" id="spinner" style="display: none;"></div>
+                <span id="statusText">等待中</span>
+            </div>
+
+            <div id="bookingCodeContainer" style="display: none;">
+                <p style="text-align: center; margin-bottom: 10px;">訂票代碼：</p>
+                <div class="booking-code" id="bookingCode"></div>
+                <p style="text-align: center; color: #dc3545; font-weight: bold;">
+                    ⚠️ 請在 30 分鐘內完成付款！
+                </p>
+            </div>
+
+            <h3 style="margin: 20px 0 10px; color: #333;">執行日誌</h3>
+            <div class="log-container" id="logContainer">
+                等待開始...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 設定預設日期為明天
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('travel_date').value = tomorrow.toISOString().split('T')[0];
+
+        let statusInterval = null;
+
+        function startBooking() {
+            // 收集表單資料
+            const data = {
+                id_number: document.getElementById('id_number').value.trim(),
+                passenger_name: document.getElementById('passenger_name').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                departure_station: document.getElementById('departure_station').value,
+                arrival_station: document.getElementById('arrival_station').value,
+                travel_date: document.getElementById('travel_date').value,
+                preferred_time: document.getElementById('preferred_time').value,
+                ticket_count: document.getElementById('ticket_count').value,
+                ticket_type: document.getElementById('ticket_type').value,
+                car_class: document.getElementById('car_class').value,
+                seat_preference: document.getElementById('seat_preference').value,
+                max_retries: document.getElementById('max_retries').value,
+                retry_interval: document.getElementById('retry_interval').value,
+                headless: document.getElementById('headless').checked
+            };
+
+            // 驗證必填欄位
+            if (!data.id_number || !data.passenger_name || !data.phone) {
+                alert('請填寫所有必填欄位（身分證字號、姓名、電話）');
+                return;
+            }
+
+            if (data.departure_station === data.arrival_station) {
+                alert('出發站和到達站不能相同');
+                return;
+            }
+
+            // 顯示狀態卡片
+            document.getElementById('statusCard').classList.add('active');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('bookingCodeContainer').style.display = 'none';
+
+            // 發送請求
+            fetch('/api/book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    // 開始輪詢狀態
+                    statusInterval = setInterval(checkStatus, 1000);
+                } else {
+                    alert(result.message);
+                    resetUI();
+                }
+            })
+            .catch(err => {
+                alert('發生錯誤: ' + err);
+                resetUI();
+            });
+        }
+
+        function stopBooking() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(res => res.json())
+                .then(result => {
+                    alert(result.message);
+                });
+        }
+
+        function checkStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(status => {
+                    updateStatusUI(status);
+
+                    if (!status.running) {
+                        clearInterval(statusInterval);
+                        resetUI();
+                    }
+                });
+        }
+
+        function updateStatusUI(status) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const spinner = document.getElementById('spinner');
+            const logContainer = document.getElementById('logContainer');
+
+            // 更新狀態指示器
+            indicator.className = 'status-indicator ' + status.status;
+
+            if (status.running) {
+                spinner.style.display = 'block';
+                statusText.textContent = status.message || '執行中...';
+            } else {
+                spinner.style.display = 'none';
+                statusText.textContent = status.message || '已完成';
+            }
+
+            // 顯示訂票代碼
+            if (status.booking_code) {
+                document.getElementById('bookingCodeContainer').style.display = 'block';
+                document.getElementById('bookingCode').textContent = status.booking_code;
+            }
+
+            // 更新日誌
+            if (status.logs && status.logs.length > 0) {
+                logContainer.innerHTML = status.logs.join('<br>');
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        function resetUI() {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>
