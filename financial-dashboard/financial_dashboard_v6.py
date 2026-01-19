@@ -329,22 +329,57 @@ if HAS_FEEDPARSER:
         for url, source in config['feeds']:
             try:
                 feed = feedparser.parse(url)
-                for entry in feed.entries[:3]:
+                for entry in feed.entries[:5]:
                     title = entry.title[:80] + '...' if len(entry.title) > 80 else entry.title
+                    # Try multiple fields for the article link
+                    article_link = '#'
+                    if hasattr(entry, 'link') and entry.link:
+                        article_link = entry.link
+                    elif hasattr(entry, 'links') and entry.links:
+                        for link_obj in entry.links:
+                            if link_obj.get('type', '').startswith('text/html') or link_obj.get('rel') == 'alternate':
+                                article_link = link_obj.get('href', '#')
+                                break
+                        if article_link == '#' and entry.links:
+                            article_link = entry.links[0].get('href', '#')
+                    elif hasattr(entry, 'id') and entry.id and entry.id.startswith('http'):
+                        article_link = entry.id
+
+                    # Get published time
+                    pub_time = 'Recent'
+                    if hasattr(entry, 'published') and entry.published:
+                        pub_time = entry.published[:25]
+                    elif hasattr(entry, 'updated') and entry.updated:
+                        pub_time = entry.updated[:25]
+
                     categorized_news[category]['items'].append({
-                        'title': title, 'source': source,
-                        'time': entry.get('published', '')[:20] if entry.get('published') else 'Recent',
-                        'link': entry.get('link', '#')
+                        'title': title,
+                        'source': source,
+                        'time': pub_time,
+                        'link': article_link
                     })
-            except:
-                pass
-        if len(categorized_news[category]['items']) < 5:
-            remaining = 5 - len(categorized_news[category]['items'])
-            categorized_news[category]['items'].extend(config['fallback'][:remaining])
+            except Exception as e:
+                print(f"      Warning: Failed to parse {source} feed - {str(e)[:30]}")
+
+        # Only use fallback if we got no real news, and mark them clearly
+        if len(categorized_news[category]['items']) < 3:
+            for fb in config['fallback'][:5 - len(categorized_news[category]['items'])]:
+                fb_copy = fb.copy()
+                fb_copy['link'] = '#'  # No link for fallback items
+                fb_copy['source'] = fb['source'] + ' (Sample)'
+                categorized_news[category]['items'].append(fb_copy)
+
         categorized_news[category]['items'] = categorized_news[category]['items'][:5]
 else:
+    # No feedparser available - use fallback with sample markers
     for category, config in news_categories.items():
-        categorized_news[category] = {'icon': config['icon'], 'items': config['fallback'][:5]}
+        items = []
+        for fb in config['fallback'][:5]:
+            fb_copy = fb.copy()
+            fb_copy['link'] = '#'
+            fb_copy['source'] = fb['source'] + ' (Sample)'
+            items.append(fb_copy)
+        categorized_news[category] = {'icon': config['icon'], 'items': items}
 print("      ✓ Done")
 
 print("\n" + "=" * 70)
@@ -956,13 +991,16 @@ html += '''</tbody></table></div>
                     <thead><tr><th>Sector</th><th>Daily</th><th>YTD</th><th>Performance</th></tr></thead>
                     <tbody>'''
 
+# Calculate max change for proportional bar sizing
+max_sector_change = max(abs(s['change']) for s in sectors) if sectors else 1
 for s in sectors:
-    bar_width = min(abs(s['change']) * 20, 100)
+    # Scale bar width proportionally (max value = 100%)
+    bar_width = (abs(s['change']) / max_sector_change) * 100 if max_sector_change > 0 else 0
     bar_color = '#3fb950' if s['change'] >= 0 else '#f85149'
     if s['change'] >= 0:
-        bar_html = f'''<div class="bar-container"><div class="bar-negative"></div><div class="bar-positive"><div class="bar bar-pos" style="width:{bar_width}%;background:{bar_color}">{s['change']:+.2f}%</div></div></div>'''
+        bar_html = f'''<div class="bar-container"><div class="bar-negative"></div><div class="bar-positive"><div class="bar bar-pos" style="width:{bar_width:.1f}%;background:{bar_color}">{s['change']:+.2f}%</div></div></div>'''
     else:
-        bar_html = f'''<div class="bar-container"><div class="bar-negative"><div class="bar bar-neg" style="width:{bar_width}%;background:{bar_color}">{s['change']:+.2f}%</div></div><div class="bar-positive"></div></div>'''
+        bar_html = f'''<div class="bar-container"><div class="bar-negative"><div class="bar bar-neg" style="width:{bar_width:.1f}%;background:{bar_color}">{s['change']:+.2f}%</div></div><div class="bar-positive"></div></div>'''
     html += f'''<tr><td><strong>{s['name']}</strong></td><td>{fmt_chg(s['change'])}</td><td>{fmt_ytd(s['ytd'])}</td><td>{bar_html}</td></tr>'''
 
 html += '''</tbody></table></div></div>
