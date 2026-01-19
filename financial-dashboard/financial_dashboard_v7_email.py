@@ -49,11 +49,11 @@ warnings.filterwarnings('ignore')
 # ==================== EMAIL CONFIGURATION ====================
 EMAIL_CONFIG = {
     'enabled': True,                          # Set to True to enable email
-    'sender_email': 'your_email@gmail.com',   # Your Gmail address
-    'app_password': 'xxxx xxxx xxxx xxxx',    # Gmail App Password (16 chars)
+    'sender_email': 'tadpole60270@gmail.com',   # Your Gmail address
+    'app_password': 'canz asby foap pxzr',    # Gmail App Password (16 chars)
     'recipients': [                            # List of recipients
-        'recipient1@example.com',
-        'recipient2@example.com',
+        'josh.ko@tsit.com.tw',
+        'tadpole60270@gmail.com',
     ],
     'subject': '📊 Daily Financial Dashboard - {date}',  # Email subject
     'send_html_attachment': True,              # Attach HTML file
