@@ -821,10 +821,14 @@ move_val = volatility['MOVE']['value']
 move_chg = volatility['MOVE']['change']
 fg_val = volatility['Fear_Greed']
 
-# Calculate needle rotations for SVG gauges
-vix_rotation = 180 - (min(max(vix_val, 0), 80) / 80) * 180
-move_rotation = 180 - ((min(max(move_val, 60), 180) - 60) / 120) * 180
-fg_rotation = 180 - (min(max(fg_val, 0), 100) / 100) * 180
+# Calculate needle angles for SVG gauges (angle in degrees from vertical, clockwise)
+# SVG arc goes from left (180°) to right (0°), so we map value to this range
+# For VIX: 0 -> -90° (pointing left), 80 -> +90° (pointing right)
+vix_angle = -90 + (min(max(vix_val, 0), 80) / 80) * 180
+# For MOVE: 60 -> -90°, 180 -> +90°
+move_angle = -90 + ((min(max(move_val, 60), 180) - 60) / 120) * 180
+# For Fear & Greed: 0 -> -90°, 100 -> +90°
+fg_angle = -90 + (min(max(fg_val, 0), 100) / 100) * 180
 
 # Determine status labels
 vix_status = 'Low' if vix_val < 15 else 'Normal' if vix_val < 25 else 'High' if vix_val < 35 else 'Extreme'
@@ -887,12 +891,17 @@ html = f'''<!DOCTYPE html>
         .news-title {{ font-weight: 600; margin-bottom: 6px; line-height: 1.4; }}
         .news-meta {{ font-size: 0.8rem; color: #8b949e; }}
         .news-src {{ color: #58a6ff; font-weight: 600; }}
-        .bar {{ height: 24px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; font-size: 0.8rem; font-weight: 600; color: white; margin: 4px 0; }}
+        .bar-container {{ display: flex; align-items: center; height: 24px; }}
+        .bar-negative {{ display: flex; justify-content: flex-end; width: 50%; }}
+        .bar-positive {{ display: flex; justify-content: flex-start; width: 50%; }}
+        .bar {{ height: 20px; border-radius: 4px; display: flex; align-items: center; padding: 0 6px; font-size: 0.75rem; font-weight: 600; color: white; min-width: 45px; }}
+        .bar-neg {{ justify-content: flex-start; }}
+        .bar-pos {{ justify-content: flex-end; }}
         footer {{ text-align: center; padding: 20px; color: #8b949e; font-size: 0.85rem; margin-top: 20px; }}
         .data-source {{ font-size: 0.75rem; color: #6e7681; margin-top: 5px; }}
 
-        /* Needle animation */
-        .gauge-needle {{ transition: transform 1s ease-out; transform-origin: 140px 140px; }}
+        /* Needle styling */
+        .gauge-needle {{ transition: transform 0.8s ease-out; }}
     </style>
 </head>
 <body>
@@ -948,9 +957,13 @@ html += '''</tbody></table></div>
                     <tbody>'''
 
 for s in sectors:
-    bar_width = min(abs(s['change']) * 25, 100)
+    bar_width = min(abs(s['change']) * 20, 100)
     bar_color = '#3fb950' if s['change'] >= 0 else '#f85149'
-    html += f'''<tr><td><strong>{s['name']}</strong></td><td>{fmt_chg(s['change'])}</td><td>{fmt_ytd(s['ytd'])}</td><td><div class="bar" style="width:{bar_width}%;background:{bar_color}">{s['change']:+.2f}%</div></td></tr>'''
+    if s['change'] >= 0:
+        bar_html = f'''<div class="bar-container"><div class="bar-negative"></div><div class="bar-positive"><div class="bar bar-pos" style="width:{bar_width}%;background:{bar_color}">{s['change']:+.2f}%</div></div></div>'''
+    else:
+        bar_html = f'''<div class="bar-container"><div class="bar-negative"><div class="bar bar-neg" style="width:{bar_width}%;background:{bar_color}">{s['change']:+.2f}%</div></div><div class="bar-positive"></div></div>'''
+    html += f'''<tr><td><strong>{s['name']}</strong></td><td>{fmt_chg(s['change'])}</td><td>{fmt_ytd(s['ytd'])}</td><td>{bar_html}</td></tr>'''
 
 html += '''</tbody></table></div></div>
 
@@ -1027,11 +1040,11 @@ html += f'''</tbody></table></div></div>
                         <text x="205" y="45" fill="#8b949e" font-size="10" text-anchor="middle">60</text>
                         <text x="250" y="160" fill="#8b949e" font-size="10" text-anchor="middle">80</text>
                         <!-- Needle -->
-                        <g class="gauge-needle" style="transform: rotate({vix_rotation}deg);">
-                            <polygon points="140,50 135,140 140,145 145,140" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
-                            <circle cx="140" cy="140" r="12" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
-                            <circle cx="140" cy="140" r="6" fill="#1a202c"/>
+                        <g transform="rotate({vix_angle:.1f}, 140, 140)">
+                            <polygon points="140,45 133,138 140,148 147,138" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
                         </g>
+                        <circle cx="140" cy="140" r="14" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+                        <circle cx="140" cy="140" r="7" fill="#1a202c"/>
                     </svg>
                     <div class="gauge-value">{vix_val:.1f}</div>
                     <div class="gauge-status" style="color:{vix_color}">{vix_status}</div>
@@ -1065,11 +1078,11 @@ html += f'''</tbody></table></div></div>
                         <text x="140" y="25" fill="#8b949e" font-size="10" text-anchor="middle">120</text>
                         <text x="205" y="45" fill="#8b949e" font-size="10" text-anchor="middle">150</text>
                         <text x="250" y="160" fill="#8b949e" font-size="10" text-anchor="middle">180</text>
-                        <g class="gauge-needle" style="transform: rotate({move_rotation}deg);">
-                            <polygon points="140,50 135,140 140,145 145,140" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
-                            <circle cx="140" cy="140" r="12" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
-                            <circle cx="140" cy="140" r="6" fill="#1a202c"/>
+                        <g transform="rotate({move_angle:.1f}, 140, 140)">
+                            <polygon points="140,45 133,138 140,148 147,138" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
                         </g>
+                        <circle cx="140" cy="140" r="14" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+                        <circle cx="140" cy="140" r="7" fill="#1a202c"/>
                     </svg>
                     <div class="gauge-value">{move_val:.0f}</div>
                     <div class="gauge-status" style="color:{move_color}">{move_status}</div>
@@ -1103,11 +1116,11 @@ html += f'''</tbody></table></div></div>
                         <text x="140" y="25" fill="#f1c40f" font-size="9" text-anchor="middle">NEUTRAL</text>
                         <text x="220" y="50" fill="#27ae60" font-size="9" text-anchor="middle">GREED</text>
                         <text x="250" y="160" fill="#8b949e" font-size="10" text-anchor="middle">100</text>
-                        <g class="gauge-needle" style="transform: rotate({fg_rotation}deg);">
-                            <polygon points="140,50 135,140 140,145 145,140" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
-                            <circle cx="140" cy="140" r="12" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
-                            <circle cx="140" cy="140" r="6" fill="#1a202c"/>
+                        <g transform="rotate({fg_angle:.1f}, 140, 140)">
+                            <polygon points="140,45 133,138 140,148 147,138" fill="#ff4757" stroke="#c0392b" stroke-width="1"/>
                         </g>
+                        <circle cx="140" cy="140" r="14" fill="#2d3748" stroke="#4a5568" stroke-width="2"/>
+                        <circle cx="140" cy="140" r="7" fill="#1a202c"/>
                     </svg>
                     <div class="gauge-value">{fg_val:.0f}</div>
                     <div class="gauge-status" style="color:{fg_color}">{fg_status}</div>
