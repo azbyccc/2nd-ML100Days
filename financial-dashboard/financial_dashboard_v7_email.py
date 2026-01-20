@@ -65,8 +65,8 @@ OUTPUT_CONFIG = {
     'save_html': True,
     'save_png': True,
     'output_folder': os.path.join(os.path.expanduser('~'), 'Desktop', 'FinancialDashboard'),
-    'open_browser': False,  # Set False for scheduled runs
-    'show_matplotlib': False,  # Set False for scheduled runs
+    'open_browser': True,  # Auto open HTML in browser
+    'show_matplotlib': True,  # Auto show matplotlib chart
 }
 
 # ==================== SCHEDULE CONFIGURATION ====================
@@ -713,7 +713,7 @@ def start_scheduler():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Financial Dashboard with Email')
     parser.add_argument('--schedule', action='store_true', help='Run in scheduled mode')
-    parser.add_argument('--email', action='store_true', help='Send email after generation')
+    parser.add_argument('--no-email', action='store_true', help='Skip email sending')
     parser.add_argument('--no-show', action='store_true', help='Don\'t show matplotlib window')
     args = parser.parse_args()
 
@@ -727,7 +727,8 @@ if __name__ == '__main__':
         # Single run
         html, png_buffer, html_path, png_path = generate_dashboard()
 
-        if args.email:
+        # Auto send email by default (unless --no-email is specified)
+        if not args.no_email:
             print("\n" + "=" * 70)
             print("   Sending Email...")
             print("=" * 70)
