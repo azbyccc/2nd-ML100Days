@@ -28,511 +28,602 @@ FORWARD_YEARS = 2    # 違約觀察期（年）
 
 # 計算日期範圍
 end_date = datetime.now()
-start_date = end_date - relativedelta(years=LOOKBACK_YEARS + FORWARD_YEARS)  # 額外加2年以確保有足夠的前瞻期
-analysis_end_date = end_date - relativedelta(years=FORWARD_YEARS)  # 展望數據截止日（確保有2年觀察期）
+start_date = end_date - relativedelta(years=LOOKBACK_YEARS + FORWARD_YEARS)
+analysis_end_date = end_date - relativedelta(years=FORWARD_YEARS)
 
 print(f"分析期間: {start_date.strftime('%Y-%m-%d')} 至 {analysis_end_date.strftime('%Y-%m-%d')}")
 print(f"違約觀察期: 每個正向展望事件後的 {FORWARD_YEARS} 年")
 
-# ============================================================================
-# 方法一：使用BQL查詢信用評級展望變化和違約事件
-# ============================================================================
-
-def get_positive_outlook_companies():
-    """
-    獲取被給予正向展望的公司列表
-
-    Bloomberg欄位說明：
-    - RTG_SP_LT_LC_ISSUER_CREDIT: S&P長期本地貨幣發行人信用評級
-    - RTG_MOODY_LONG_TERM: Moody's長期評級
-    - RTG_FITCH_LT_ISSUER_DEFAULT: Fitch長期發行人違約評級
-    - RTG_SP_OUTLOOK: S&P展望
-    - RTG_MOODY_OUTLOOK: Moody's展望
-    - RTG_FITCH_OUTLOOK: Fitch展望
-    """
-
-    # 定義要分析的公司宇宙（可根據需求調整）
-    # 這裡使用全球投資級和高收益債券發行人
-    universe = bq.univ.bondsuniv(
-        issuers='active',
-        currency='USD',
-        ratings=['IG', 'HY']  # 投資級和高收益級
-    )
-
-    # 或者使用更廣泛的企業宇宙
-    # universe = bq.univ.members('BERC Index')  # Bloomberg全球企業債指數
-
-    return universe
-
-
-def query_outlook_and_default_data():
-    """
-    查詢展望數據和違約事件
-    """
-
-    # 定義時間範圍
-    date_range = bq.func.range(
-        start_date.strftime('%Y-%m-%d'),
-        analysis_end_date.strftime('%Y-%m-%d')
-    )
-
-    # ========================================
-    # 查詢各信評機構的展望歷史
-    # ========================================
-
-    # S&P 展望
-    sp_outlook = bq.data.rtg_sp_outlook(dates=date_range)
-
-    # Moody's 展望
-    moody_outlook = bq.data.rtg_moody_outlook(dates=date_range)
-
-    # Fitch 展望
-    fitch_outlook = bq.data.rtg_fitch_outlook(dates=date_range)
-
-    # 違約指標
-    default_indicator = bq.data.default_flag()
-    default_date = bq.data.default_date()
-
-    # 建立查詢請求
-    universe = get_positive_outlook_companies()
-
-    request = bql.Request(
-        universe,
-        {
-            'SP_Outlook': sp_outlook,
-            'Moody_Outlook': moody_outlook,
-            'Fitch_Outlook': fitch_outlook,
-            'Default_Flag': default_indicator,
-            'Default_Date': default_date
-        }
-    )
-
-    # 執行查詢
-    response = bq.execute(request)
-
-    return response
-
-
-def analyze_outlook_with_rating_actions():
-    """
-    使用評級行動數據進行更詳細的分析
-
-    Bloomberg RATC (Rating Actions) 功能提供評級變化的歷史數據
-    """
-
-    # 使用RATC函數獲取評級行動歷史
-    # 這包含展望變化事件
-
-    query = f"""
-    get(
-        RATING_ACTION_TYPE,
-        RATING_ACTION_DATE,
-        RATING_AGENCY,
-        RATING_OUTLOOK,
-        RATING_WATCH,
-        RATING_VALUE
-    )
-    for(
-        filter(
-            bondsuniv(issuers='active'),
-            RATING_ACTION_DATE >= '{start_date.strftime('%Y-%m-%d')}' AND
-            RATING_ACTION_DATE <= '{analysis_end_date.strftime('%Y-%m-%d')}'
-        )
-    )
-    where(
-        RATING_OUTLOOK == 'Positive' OR RATING_OUTLOOK == 'POS'
-    )
-    """
-
-    # 執行BQL查詢
-    response = bq.execute(query)
-
-    return response
-
 
 # ============================================================================
-# 方法二：使用CRDT和RATC API進行更細緻的分析
+# 方法一：使用指數成員作為宇宙
 # ============================================================================
 
-def detailed_outlook_default_analysis():
+def get_credit_universe_from_index(index_ticker='LF98TRUU Index'):
     """
-    詳細分析：追蹤每個正向展望事件後的違約情況
+    從信用債指數獲取公司宇宙
+
+    常用指數：
+    - LF98TRUU Index: Bloomberg US Corporate Bond Index
+    - LUACTRUU Index: Bloomberg US Corporate Investment Grade
+    - LF98TREH Index: Bloomberg US High Yield
+    - LEGATRUU Index: Bloomberg Global Aggregate
+    - I00001US Index: Bloomberg US IG Corporate (BVAL)
+    - LP06TREU Index: Bloomberg Pan-European Aggregate Corporate
     """
-
-    print("\n" + "="*60)
-    print("開始詳細分析...")
-    print("="*60)
-
-    # 定義展望值的正向標識
-    POSITIVE_OUTLOOK_VALUES = ['Positive', 'POS', 'POSITIVE', '+', 'Pos']
-
-    # 步驟1: 獲取具有評級數據的公司列表
-    print("\n[步驟1] 獲取具有信用評級的公司列表...")
-
-    # 使用全球公司債宇宙
-    universe_query = bql.Request(
-        bq.univ.filter(
-            bq.univ.bondsuniv(issuers='active'),
-            bq.data.country_iso() != 'NA'  # 排除無國家數據的公司
-        ),
-        {'Ticker': bq.data.ticker()}
-    )
-
     try:
-        universe_response = bq.execute(universe_query)
-        companies = universe_response[0].df()
-        print(f"   找到 {len(companies)} 家公司")
+        universe = bq.univ.members(index_ticker)
+        return universe
     except Exception as e:
-        print(f"   查詢錯誤: {e}")
+        print(f"獲取指數成員錯誤: {e}")
         return None
 
-    # 步驟2: 查詢展望歷史數據
-    print("\n[步驟2] 查詢各信評機構的展望歷史...")
 
-    outlook_fields = {
-        'SP_Outlook': 'RTG_SP_OUTLOOK',
-        'Moody_Outlook': 'RTG_MOODY_OUTLOOK',
-        'Fitch_Outlook': 'RTG_FITCH_OUTLOOK'
-    }
-
-    # 使用時間序列查詢
-    date_range = bq.func.range(
-        start_date.strftime('%Y-%m-%d'),
-        end_date.strftime('%Y-%m-%d'),
-        frq='M'  # 月度頻率
-    )
-
-    # 步驟3: 查詢違約數據
-    print("\n[步驟3] 查詢違約事件數據...")
-
-    default_query = bql.Request(
-        bq.univ.bondsuniv(issuers='active'),
-        {
-            'Default_Date': bq.data.default_date(),
-            'Is_Defaulted': bq.data.is_defaulted()
-        }
-    )
-
+def get_universe_with_screening():
+    """
+    使用Bloomberg篩選功能獲取有評級的公司
+    """
+    # 使用EQS篩選器或直接使用已知的指數
     try:
-        default_response = bq.execute(default_query)
-        default_df = default_response[0].df()
-        print(f"   找到 {default_df['Is_Defaulted'].sum()} 起違約事件")
-    except Exception as e:
-        print(f"   查詢錯誤: {e}")
-        return None
-
-    return companies, default_df
+        # 方法1: 使用信用指數
+        universe = bq.univ.members('LUACTRUU Index')  # US Investment Grade Corporate
+        return universe
+    except:
+        try:
+            # 方法2: 使用全球企業債指數
+            universe = bq.univ.members('LGCPTRUU Index')  # Global Corporate
+            return universe
+        except:
+            # 方法3: 使用特定股票列表測試
+            test_tickers = [
+                'AAPL US Equity', 'MSFT US Equity', 'GOOGL US Equity',
+                'JPM US Equity', 'BAC US Equity', 'C US Equity',
+                'XOM US Equity', 'CVX US Equity', 'T US Equity',
+                'VZ US Equity', 'GM US Equity', 'F US Equity'
+            ]
+            return test_tickers
 
 
 # ============================================================================
-# 方法三：使用DRSK（違約風險）數據進行分析
+# 方法二：查詢展望和違約數據（修正版）
 # ============================================================================
 
-def analyze_using_drsk():
+def query_outlook_data_v2():
     """
-    使用Bloomberg DRSK違約風險數據進行分析
-    結合展望數據和違約機率
+    使用正確的BQL語法查詢展望數據
     """
-
     print("\n" + "="*60)
-    print("使用DRSK違約風險數據進行分析")
+    print("查詢信用評級展望數據")
     print("="*60)
 
-    # DRSK提供的違約機率欄位
-    drsk_fields = {
-        'PD_1Y': bq.data.drsk_pd_1y(),   # 1年違約機率
-        'PD_2Y': bq.data.drsk_pd_2y(),   # 2年違約機率
-        'PD_5Y': bq.data.drsk_pd_5y(),   # 5年違約機率
-    }
+    # 使用多個信用指數組合
+    indices_to_try = [
+        ('LUACTRUU Index', 'US Investment Grade Corporate'),
+        ('LF98TRUU Index', 'US Corporate Bond'),
+        ('I00001US Index', 'Bloomberg US IG Corporate'),
+        ('EUCA Index', 'Euro Corporate'),
+    ]
 
-    # 建立查詢
-    query = bql.Request(
-        bq.univ.filter(
-            bq.univ.bondsuniv(issuers='active'),
-            bq.func.or_(
-                bq.data.rtg_sp_outlook() == 'Positive',
-                bq.data.rtg_moody_outlook() == 'Positive',
-                bq.data.rtg_fitch_outlook() == 'Positive'
+    for index_ticker, index_name in indices_to_try:
+        print(f"\n嘗試使用 {index_name} ({index_ticker})...")
+
+        try:
+            # 定義宇宙
+            universe = bq.univ.members(index_ticker)
+
+            # 查詢展望數據
+            request = bql.Request(
+                universe,
+                {
+                    'Name': bq.data.name(),
+                    'Ticker': bq.data.ticker(),
+                    'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
+                    'SP_Outlook': bq.data.rtg_sp_outlook(),
+                    'Moody_Rating': bq.data.rtg_moody_long_term(),
+                    'Moody_Outlook': bq.data.rtg_moody_outlook(),
+                    'Fitch_Rating': bq.data.rtg_fitch_lt_issuer_default(),
+                    'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
+                    'Country': bq.data.country_full_name(),
+                    'Sector': bq.data.gics_sector_name()
+                }
             )
-        ),
-        {
-            'Company': bq.data.name(),
-            'SP_Outlook': bq.data.rtg_sp_outlook(),
-            'Moody_Outlook': bq.data.rtg_moody_outlook(),
-            'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
-            'PD_2Y': bq.data.drsk_pd_2y(),
-            'Current_Rating': bq.data.rtg_sp_lt_lc_issuer_credit()
-        }
-    )
 
-    try:
-        response = bq.execute(query)
-        df = response[0].df()
-        return df
-    except Exception as e:
-        print(f"查詢錯誤: {e}")
-        return None
+            response = bq.execute(request)
+            df = response[0].df()
+
+            if not df.empty:
+                print(f"   成功獲取 {len(df)} 筆資料")
+                return df, index_name
+
+        except Exception as e:
+            print(f"   錯誤: {e}")
+            continue
+
+    return None, None
 
 
-# ============================================================================
-# 方法四：完整的歷史分析流程（推薦）
-# ============================================================================
-
-def comprehensive_outlook_default_study():
+def query_issuer_outlook_data():
     """
-    完整的正向展望違約率研究
-
-    此方法執行完整的歷史分析：
-    1. 獲取過去10年的所有展望變更事件
-    2. 篩選正向展望事件
-    3. 追蹤每個事件後2年內是否發生違約
-    4. 計算違約率統計
+    直接查詢發行人的展望數據
+    使用 issuer 相關的BQL函數
     """
-
-    print("\n" + "="*70)
-    print("正向展望公司違約率完整研究")
-    print("="*70)
-    print(f"\n研究期間: {start_date.strftime('%Y-%m-%d')} 至 {analysis_end_date.strftime('%Y-%m-%d')}")
-    print(f"違約觀察視窗: {FORWARD_YEARS} 年")
-
-    # ==========================================
-    # 步驟1: 使用ACTS獲取評級行動歷史
-    # ==========================================
-    print("\n[步驟1] 查詢評級行動歷史數據...")
-
-    # 使用Bloomberg的評級行動歷史數據
-    # ACTS是Bloomberg的評級行動數據庫
-
-    acts_query = f"""
-    get(
-        ID_BB_COMPANY,
-        NAME,
-        RATING_ACTION_DATE,
-        RATING_AGENCY_NAME,
-        RTG_ACTION_TYPE_DESC,
-        OUTLOOK_ACTION,
-        RTG_OUTLOOK_BEFORE,
-        RTG_OUTLOOK_AFTER,
-        RTG_BEFORE,
-        RTG_AFTER
-    )
-    for(
-        filter(
-            members('BERC Index'),  -- 全球企業債指數成員
-            RATING_ACTION_DATE >= '{start_date.strftime('%Y-%m-%d')}' AND
-            RATING_ACTION_DATE <= '{analysis_end_date.strftime('%Y-%m-%d')}'
-        )
-    )
-    """
-
-    # 簡化版本的BQL查詢
-    try:
-        # 獲取當前具有正向展望的公司
-        positive_outlook_query = bql.Request(
-            bq.univ.bondsuniv(issuers='active'),
-            {
-                'Company_Name': bq.data.name(),
-                'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
-                'SP_Outlook': bq.data.rtg_sp_outlook(),
-                'Moody_Rating': bq.data.rtg_moody_long_term(),
-                'Moody_Outlook': bq.data.rtg_moody_outlook(),
-                'Fitch_Rating': bq.data.rtg_fitch_lt_issuer_default(),
-                'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
-                'Country': bq.data.country_full_name(),
-                'Sector': bq.data.bics_level_1_sector_name()
-            }
-        )
-
-        print("   執行展望查詢...")
-        response = bq.execute(positive_outlook_query)
-        outlook_df = response[0].df()
-
-        # 篩選正向展望公司
-        positive_mask = (
-            (outlook_df['SP_Outlook'].str.upper().str.contains('POS', na=False)) |
-            (outlook_df['Moody_Outlook'].str.upper().str.contains('POS', na=False)) |
-            (outlook_df['Fitch_Outlook'].str.upper().str.contains('POS', na=False))
-        )
-
-        positive_outlook_df = outlook_df[positive_mask].copy()
-        print(f"   找到 {len(positive_outlook_df)} 家目前具有正向展望的公司")
-
-    except Exception as e:
-        print(f"   展望查詢錯誤: {e}")
-        positive_outlook_df = pd.DataFrame()
-
-    # ==========================================
-    # 步驟2: 查詢歷史違約數據
-    # ==========================================
-    print("\n[步驟2] 查詢違約歷史數據...")
-
-    try:
-        default_query = bql.Request(
-            bq.univ.bondsuniv(issuers='all'),  # 包含已違約的發行人
-            {
-                'Company_Name': bq.data.name(),
-                'Is_Defaulted': bq.data.is_defaulted(),
-                'Default_Date': bq.data.default_date(),
-                'Recovery_Rate': bq.data.recovery_rate()
-            }
-        )
-
-        default_response = bq.execute(default_query)
-        default_df = default_response[0].df()
-
-        defaulted_companies = default_df[default_df['Is_Defaulted'] == True]
-        print(f"   找到 {len(defaulted_companies)} 起歷史違約事件")
-
-    except Exception as e:
-        print(f"   違約查詢錯誤: {e}")
-        default_df = pd.DataFrame()
-
-    # ==========================================
-    # 步驟3: 使用RATC獲取歷史評級變更
-    # ==========================================
-    print("\n[步驟3] 分析評級變更歷史...")
-
-    try:
-        # 查詢歷史評級變更（需要RATC權限）
-        ratc_query = bql.Request(
-            bq.univ.bondsuniv(issuers='active'),
-            {
-                'Rating_Changes': bq.data.rating_action_history(
-                    start=start_date.strftime('%Y-%m-%d'),
-                    end=end_date.strftime('%Y-%m-%d')
-                )
-            }
-        )
-
-        ratc_response = bq.execute(ratc_query)
-        ratc_df = ratc_response[0].df()
-        print(f"   獲取 {len(ratc_df)} 筆評級變更記錄")
-
-    except Exception as e:
-        print(f"   RATC查詢錯誤: {e}")
-        print("   提示: 可能需要RATC數據訂閱權限")
-
-    return positive_outlook_df, default_df
-
-
-# ============================================================================
-# 方法五：使用SRCH和CACS進行歷史事件追蹤
-# ============================================================================
-
-def historical_event_tracking():
-    """
-    使用Bloomberg公司行動和信用事件數據進行歷史追蹤
-    """
-
     print("\n" + "="*60)
-    print("歷史事件追蹤分析")
+    print("查詢發行人展望數據（替代方法）")
     print("="*60)
 
-    # 使用Credit Risk數據
-    credit_events_query = bql.Request(
-        bq.univ.bondsuniv(issuers='all'),
-        {
-            'Name': bq.data.name(),
-            'Ticker': bq.data.ticker(),
+    # 嘗試使用不同的宇宙定義方式
+    universe_methods = [
+        # 方法1: 使用股票指數然後獲取其發行人評級
+        ('SPX Index', 'S&P 500'),
+        ('RAY Index', 'Russell 3000'),
+        ('SXXP Index', 'STOXX Europe 600'),
+        # 方法2: 使用CDS指數成員
+        ('CDX IG CDSI GEN 5Y Corp', 'CDX Investment Grade'),
+    ]
 
-            # 當前評級和展望
-            'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
-            'SP_Outlook': bq.data.rtg_sp_outlook(),
-            'SP_Watch': bq.data.rtg_sp_credit_watch(),
+    for universe_ticker, universe_name in universe_methods:
+        print(f"\n嘗試 {universe_name} ({universe_ticker})...")
 
-            'Moody_Rating': bq.data.rtg_moody_long_term(),
-            'Moody_Outlook': bq.data.rtg_moody_outlook(),
-            'Moody_Watch': bq.data.rtg_moody_watch(),
+        try:
+            universe = bq.univ.members(universe_ticker)
 
-            'Fitch_Rating': bq.data.rtg_fitch_lt_issuer_default(),
-            'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
-            'Fitch_Watch': bq.data.rtg_fitch_watch(),
+            # 基本查詢
+            request = bql.Request(
+                universe,
+                {
+                    'Name': bq.data.name(),
+                    'SP_Outlook': bq.data.rtg_sp_outlook(),
+                    'Moody_Outlook': bq.data.rtg_moody_outlook(),
+                    'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
+                }
+            )
 
-            # 違約相關
-            'Is_Defaulted': bq.data.is_defaulted(),
-            'Default_Date': bq.data.default_date(),
+            response = bq.execute(request)
+            df = response[0].df()
 
-            # 信用風險指標
-            'CDS_Spread_5Y': bq.data.cds_spread_5y(),
-            'Implied_PD_1Y': bq.data.implied_cds_spread_1y(),
-        }
-    )
+            if not df.empty:
+                print(f"   成功獲取 {len(df)} 筆資料")
+                return df, universe_name
 
+        except Exception as e:
+            print(f"   錯誤: {e}")
+            continue
+
+    return None, None
+
+
+# ============================================================================
+# 方法三：使用歷史時間序列查詢展望變更
+# ============================================================================
+
+def query_historical_outlook_changes():
+    """
+    查詢歷史展望變更事件
+    """
+    print("\n" + "="*60)
+    print("查詢歷史展望變更")
+    print("="*60)
+
+    # 先獲取一個基本的公司宇宙
     try:
-        response = bq.execute(credit_events_query)
-        df = response[0].df()
-        return df
+        universe = bq.univ.members('SPX Index')
+
+        # 定義時間範圍
+        date_range = bq.func.range(
+            start_date.strftime('%Y-%m-%d'),
+            end_date.strftime('%Y-%m-%d'),
+            frq='M'  # 月度
+        )
+
+        # 查詢歷史展望
+        request = bql.Request(
+            universe,
+            {
+                'SP_Outlook_History': bq.data.rtg_sp_outlook(dates=date_range),
+                'Moody_Outlook_History': bq.data.rtg_moody_outlook(dates=date_range),
+                'Fitch_Outlook_History': bq.data.rtg_fitch_outlook(dates=date_range),
+            }
+        )
+
+        response = bq.execute(request)
+
+        # 處理結果
+        results = {}
+        for item in response:
+            df = item.df()
+            if not df.empty:
+                results[item.name] = df
+
+        return results
+
     except Exception as e:
-        print(f"查詢錯誤: {e}")
+        print(f"歷史查詢錯誤: {e}")
         return None
 
 
 # ============================================================================
-# 計算違約率統計
+# 方法四：使用RATC（評級行動）數據
 # ============================================================================
 
-def calculate_default_rate(positive_outlook_events, default_events, forward_years=2):
+def query_rating_actions():
     """
-    計算正向展望公司的違約率
-
-    參數:
-        positive_outlook_events: DataFrame包含正向展望事件（需有公司ID和日期）
-        default_events: DataFrame包含違約事件（需有公司ID和違約日期）
-        forward_years: 觀察期（年）
-
-    返回:
-        dict: 包含違約率統計的字典
+    查詢評級行動歷史
+    使用Bloomberg的RATC數據
     """
+    print("\n" + "="*60)
+    print("查詢評級行動歷史（RATC）")
+    print("="*60)
 
-    if positive_outlook_events.empty:
-        return {"error": "沒有正向展望事件數據"}
+    try:
+        universe = bq.univ.members('SPX Index')
 
-    total_positive_outlooks = len(positive_outlook_events)
-    defaults_within_window = 0
+        # RATC相關欄位
+        request = bql.Request(
+            universe,
+            {
+                'Name': bq.data.name(),
+                # 嘗試不同的評級行動欄位
+                'SP_Action_Date': bq.data.rtg_sp_action_dt(),
+                'SP_Action_Type': bq.data.rtg_sp_action(),
+                'Moody_Action_Date': bq.data.rtg_moody_action_dt(),
+                'Moody_Action_Type': bq.data.rtg_moody_action(),
+            }
+        )
 
-    # 對每個正向展望事件，檢查後續是否違約
-    for idx, row in positive_outlook_events.iterrows():
-        company_id = row.get('ID_BB_COMPANY') or row.get('Ticker') or idx
-        outlook_date = pd.to_datetime(row.get('Outlook_Date', row.get('Date', datetime.now())))
+        response = bq.execute(request)
+        df = response[0].df()
 
-        # 計算觀察視窗
-        window_end = outlook_date + relativedelta(years=forward_years)
+        return df
 
-        # 檢查該公司是否在視窗內違約
-        company_defaults = default_events[
-            default_events.index.str.contains(str(company_id), na=False) |
-            (default_events.get('Company_ID') == company_id)
+    except Exception as e:
+        print(f"RATC查詢錯誤: {e}")
+        return None
+
+
+# ============================================================================
+# 方法五：使用違約數據庫
+# ============================================================================
+
+def query_default_data():
+    """
+    查詢違約事件數據
+    """
+    print("\n" + "="*60)
+    print("查詢違約事件數據")
+    print("="*60)
+
+    try:
+        # 使用可能包含違約公司的宇宙
+        # 嘗試使用CDS指數或高收益指數
+        indices = [
+            'LF98TREH Index',  # US High Yield
+            'SPX Index',
         ]
 
-        for _, default_row in company_defaults.iterrows():
-            default_date = pd.to_datetime(default_row.get('Default_Date'))
-            if pd.notna(default_date) and outlook_date <= default_date <= window_end:
-                defaults_within_window += 1
-                break
+        for idx in indices:
+            try:
+                universe = bq.univ.members(idx)
 
-    # 計算統計
-    default_rate = (defaults_within_window / total_positive_outlooks * 100) if total_positive_outlooks > 0 else 0
+                request = bql.Request(
+                    universe,
+                    {
+                        'Name': bq.data.name(),
+                        'Is_Defaulted': bq.data.is_defaulted(),
+                        'Default_Date': bq.data.default_date(),
+                        'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
+                    }
+                )
+
+                response = bq.execute(request)
+                df = response[0].df()
+
+                if not df.empty:
+                    print(f"   從 {idx} 獲取 {len(df)} 筆資料")
+                    return df
+
+            except Exception as e:
+                print(f"   {idx} 錯誤: {e}")
+                continue
+
+    except Exception as e:
+        print(f"違約查詢錯誤: {e}")
+
+    return None
+
+
+# ============================================================================
+# 方法六：使用SRCH篩選器
+# ============================================================================
+
+def query_with_screening():
+    """
+    使用BQL篩選功能獲取正向展望的公司
+    """
+    print("\n" + "="*60)
+    print("使用篩選功能查詢正向展望公司")
+    print("="*60)
+
+    try:
+        # 方法1: 使用filter函數
+        # 獲取S&P展望為正向的公司
+        universe = bq.univ.filter(
+            bq.univ.members('SPX Index'),
+            bq.data.rtg_sp_outlook() == 'Positive'
+        )
+
+        request = bql.Request(
+            universe,
+            {
+                'Name': bq.data.name(),
+                'Ticker': bq.data.ticker(),
+                'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
+                'SP_Outlook': bq.data.rtg_sp_outlook(),
+                'Sector': bq.data.gics_sector_name()
+            }
+        )
+
+        response = bq.execute(request)
+        df = response[0].df()
+
+        print(f"   S&P正向展望公司: {len(df)} 家")
+        return df
+
+    except Exception as e:
+        print(f"篩選查詢錯誤: {e}")
+
+        # 替代方法：先獲取所有，再篩選
+        try:
+            print("\n嘗試替代方法：獲取所有再篩選...")
+
+            universe = bq.univ.members('SPX Index')
+
+            request = bql.Request(
+                universe,
+                {
+                    'Name': bq.data.name(),
+                    'SP_Outlook': bq.data.rtg_sp_outlook(),
+                    'Moody_Outlook': bq.data.rtg_moody_outlook(),
+                    'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
+                }
+            )
+
+            response = bq.execute(request)
+            df = response[0].df()
+
+            # 在Python中篩選正向展望
+            positive_mask = (
+                df['SP_Outlook'].astype(str).str.upper().str.contains('POS', na=False) |
+                df['Moody_Outlook'].astype(str).str.upper().str.contains('POS', na=False) |
+                df['Fitch_Outlook'].astype(str).str.upper().str.contains('POS', na=False)
+            )
+
+            positive_df = df[positive_mask]
+            print(f"   正向展望公司: {len(positive_df)} 家")
+
+            return positive_df
+
+        except Exception as e2:
+            print(f"替代方法錯誤: {e2}")
+            return None
+
+
+# ============================================================================
+# 方法七：完整分析流程（整合版）
+# ============================================================================
+
+def comprehensive_analysis():
+    """
+    完整的正向展望違約率分析
+    """
+    print("\n" + "="*70)
+    print("正向展望公司違約率 - 完整分析")
+    print("="*70)
 
     results = {
-        'total_positive_outlook_events': total_positive_outlooks,
-        'defaults_within_window': defaults_within_window,
-        'default_rate_percent': round(default_rate, 4),
-        'observation_window_years': forward_years,
-        'non_default_rate_percent': round(100 - default_rate, 4)
+        'positive_outlook_count': 0,
+        'defaults_within_2y': 0,
+        'default_rate': 0.0,
+        'by_agency': {},
+        'by_sector': {},
+        'details': []
     }
+
+    # ============================
+    # 步驟1: 獲取當前展望數據
+    # ============================
+    print("\n[步驟1] 獲取當前信用展望數據...")
+
+    current_df = None
+
+    # 嘗試多個數據源
+    indices = ['SPX Index', 'LUACTRUU Index', 'RAY Index']
+
+    for idx in indices:
+        try:
+            print(f"   嘗試 {idx}...")
+            universe = bq.univ.members(idx)
+
+            request = bql.Request(
+                universe,
+                {
+                    'Name': bq.data.name(),
+                    'Ticker': bq.data.ticker(),
+                    'SP_Rating': bq.data.rtg_sp_lt_lc_issuer_credit(),
+                    'SP_Outlook': bq.data.rtg_sp_outlook(),
+                    'Moody_Rating': bq.data.rtg_moody_long_term(),
+                    'Moody_Outlook': bq.data.rtg_moody_outlook(),
+                    'Fitch_Rating': bq.data.rtg_fitch_lt_issuer_default(),
+                    'Fitch_Outlook': bq.data.rtg_fitch_outlook(),
+                    'Sector': bq.data.gics_sector_name(),
+                    'Country': bq.data.country_full_name(),
+                }
+            )
+
+            response = bq.execute(request)
+            current_df = response[0].df()
+
+            if current_df is not None and len(current_df) > 0:
+                print(f"   ✓ 成功從 {idx} 獲取 {len(current_df)} 家公司")
+                break
+
+        except Exception as e:
+            print(f"   ✗ {idx} 錯誤: {str(e)[:50]}...")
+            continue
+
+    if current_df is None or current_df.empty:
+        print("\n   無法獲取展望數據，請檢查BQL連接和權限")
+        return results
+
+    # ============================
+    # 步驟2: 篩選正向展望
+    # ============================
+    print("\n[步驟2] 篩選正向展望公司...")
+
+    # 識別正向展望
+    def is_positive(val):
+        if pd.isna(val):
+            return False
+        return str(val).upper() in ['POSITIVE', 'POS', '+', 'POSITIVE OUTLOOK']
+
+    current_df['SP_Positive'] = current_df['SP_Outlook'].apply(is_positive)
+    current_df['Moody_Positive'] = current_df['Moody_Outlook'].apply(is_positive)
+    current_df['Fitch_Positive'] = current_df['Fitch_Outlook'].apply(is_positive)
+    current_df['Any_Positive'] = current_df['SP_Positive'] | current_df['Moody_Positive'] | current_df['Fitch_Positive']
+
+    positive_df = current_df[current_df['Any_Positive']].copy()
+
+    print(f"   總公司數: {len(current_df)}")
+    print(f"   任一機構正向展望: {len(positive_df)}")
+    print(f"   S&P 正向: {current_df['SP_Positive'].sum()}")
+    print(f"   Moody's 正向: {current_df['Moody_Positive'].sum()}")
+    print(f"   Fitch 正向: {current_df['Fitch_Positive'].sum()}")
+
+    results['positive_outlook_count'] = len(positive_df)
+    results['by_agency'] = {
+        'SP': int(current_df['SP_Positive'].sum()),
+        'Moodys': int(current_df['Moody_Positive'].sum()),
+        'Fitch': int(current_df['Fitch_Positive'].sum())
+    }
+
+    # ============================
+    # 步驟3: 查詢違約數據
+    # ============================
+    print("\n[步驟3] 查詢違約數據...")
+
+    try:
+        # 查詢違約相關欄位
+        default_request = bql.Request(
+            bq.univ.members(idx),  # 使用上面成功的指數
+            {
+                'Is_Defaulted': bq.data.is_defaulted(),
+                'Default_Date': bq.data.default_date(),
+            }
+        )
+
+        default_response = bq.execute(default_request)
+        default_df = default_response[0].df()
+
+        if 'Is_Defaulted' in default_df.columns:
+            defaulted = default_df[default_df['Is_Defaulted'] == True]
+            print(f"   違約公司數: {len(defaulted)}")
+            results['defaults_within_2y'] = len(defaulted)
+
+    except Exception as e:
+        print(f"   違約數據查詢錯誤: {e}")
+
+    # ============================
+    # 步驟4: 產業分布
+    # ============================
+    print("\n[步驟4] 正向展望公司產業分布...")
+
+    if 'Sector' in positive_df.columns:
+        sector_counts = positive_df['Sector'].value_counts()
+        results['by_sector'] = sector_counts.to_dict()
+        print(sector_counts)
+
+    # ============================
+    # 步驟5: 輸出結果
+    # ============================
+    print("\n" + "="*60)
+    print("分析結果摘要")
+    print("="*60)
+
+    if results['positive_outlook_count'] > 0:
+        results['default_rate'] = (results['defaults_within_2y'] / results['positive_outlook_count']) * 100
+
+    print(f"\n正向展望公司總數: {results['positive_outlook_count']}")
+    print(f"2年內違約數: {results['defaults_within_2y']}")
+    print(f"違約率: {results['default_rate']:.2f}%")
+
+    print("\n各信評機構正向展望數:")
+    for agency, count in results['by_agency'].items():
+        print(f"   {agency}: {count}")
+
+    # 顯示正向展望公司清單
+    if not positive_df.empty:
+        print("\n正向展望公司範例（前20家）:")
+        display_cols = ['Name', 'SP_Outlook', 'Moody_Outlook', 'Fitch_Outlook', 'Sector']
+        available_cols = [c for c in display_cols if c in positive_df.columns]
+        print(positive_df[available_cols].head(20).to_string())
 
     return results
 
 
 # ============================================================================
-# 主程式執行
+# 方法八：使用BQL歷史函數查詢展望變更
+# ============================================================================
+
+def query_outlook_history_timeseries():
+    """
+    使用時間序列函數獲取展望歷史變更
+    """
+    print("\n" + "="*60)
+    print("查詢展望歷史時間序列")
+    print("="*60)
+
+    try:
+        universe = bq.univ.members('SPX Index')
+
+        # 建立時間序列範圍
+        dates = bq.func.range(
+            start_date.strftime('%Y-%m-%d'),
+            end_date.strftime('%Y-%m-%d'),
+            frq='Q'  # 季度頻率
+        )
+
+        # 查詢歷史展望
+        request = bql.Request(
+            universe,
+            {
+                'Name': bq.data.name(),
+                'SP_Outlook_History': bq.data.rtg_sp_outlook(dates=dates),
+            },
+            with_params={'fill': 'prev'}  # 向前填充缺失值
+        )
+
+        response = bq.execute(request)
+
+        # 處理時間序列數據
+        for item in response:
+            df = item.df()
+            print(f"\n{item.name}:")
+            print(df.head(20))
+
+        return response
+
+    except Exception as e:
+        print(f"時間序列查詢錯誤: {e}")
+        return None
+
+
+# ============================================================================
+# 主程式
 # ============================================================================
 
 def main():
     """
-    主程式：執行完整的正向展望違約率分析
+    主程式執行
     """
-
     print("\n" + "="*70)
     print("Bloomberg BQNT - 正向展望公司違約率分析")
     print("="*70)
@@ -542,181 +633,63 @@ def main():
     print(f"  - 開始日期: {start_date.strftime('%Y-%m-%d')}")
     print(f"  - 截止日期: {analysis_end_date.strftime('%Y-%m-%d')}")
 
-    # 執行分析
     print("\n開始執行分析...")
 
-    try:
-        # 方法1: 完整研究
-        positive_df, default_df = comprehensive_outlook_default_study()
+    # 執行完整分析
+    results = comprehensive_analysis()
 
-        if positive_df is not None and not positive_df.empty:
-            # 計算統計
-            print("\n" + "="*60)
-            print("分析結果摘要")
-            print("="*60)
-
-            print(f"\n目前具有正向展望的公司數: {len(positive_df)}")
-
-            if default_df is not None and not default_df.empty:
-                defaulted_count = default_df['Is_Defaulted'].sum() if 'Is_Defaulted' in default_df.columns else 0
-                print(f"歷史違約公司數: {defaulted_count}")
-
-            # 顯示前10家正向展望公司
-            print("\n正向展望公司範例（前10家）:")
-            display_cols = ['Company_Name', 'SP_Outlook', 'Moody_Outlook', 'Fitch_Outlook', 'Country', 'Sector']
-            available_cols = [col for col in display_cols if col in positive_df.columns]
-            print(positive_df[available_cols].head(10).to_string())
-
-            # 按地區統計
-            if 'Country' in positive_df.columns:
-                print("\n按國家/地區分布:")
-                print(positive_df['Country'].value_counts().head(10))
-
-            # 按產業統計
-            if 'Sector' in positive_df.columns:
-                print("\n按產業分布:")
-                print(positive_df['Sector'].value_counts())
-
-        # 方法2: 信用事件追蹤
-        credit_df = historical_event_tracking()
-
-        if credit_df is not None and not credit_df.empty:
-            # 統計正向展望
-            positive_sp = credit_df['SP_Outlook'].str.upper().str.contains('POS', na=False).sum()
-            positive_moody = credit_df['Moody_Outlook'].str.upper().str.contains('POS', na=False).sum()
-            positive_fitch = credit_df['Fitch_Outlook'].str.upper().str.contains('POS', na=False).sum()
-
-            print(f"\n各信評機構正向展望統計:")
-            print(f"  S&P 正向展望: {positive_sp}")
-            print(f"  Moody's 正向展望: {positive_moody}")
-            print(f"  Fitch 正向展望: {positive_fitch}")
-
-            # 違約統計
-            total_defaults = credit_df['Is_Defaulted'].sum() if 'Is_Defaulted' in credit_df.columns else 0
-            print(f"\n總違約數: {total_defaults}")
-
-    except Exception as e:
-        print(f"\n執行錯誤: {e}")
-        print("\n請確認:")
-        print("  1. 您正在Bloomberg Terminal的BQNT環境中執行")
-        print("  2. 您具有必要的數據訂閱權限")
-        print("  3. BQL服務已正確初始化")
+    # 嘗試獲取歷史數據
+    print("\n" + "-"*60)
+    print("嘗試獲取歷史展望時間序列...")
+    query_outlook_history_timeseries()
 
     print("\n" + "="*70)
     print("分析完成")
     print("="*70)
 
+    return results
+
 
 # ============================================================================
-# 替代方案：使用Excel API進行批量數據提取
+# 輔助函數：Excel公式參考
 # ============================================================================
 
-def generate_excel_formulas():
+def print_excel_formulas():
     """
-    生成可在Bloomberg Excel API中使用的公式
-    適用於無法直接使用BQNT的情況
+    輸出Bloomberg Excel API參考公式
     """
-
     print("\n" + "="*60)
     print("Bloomberg Excel API 公式參考")
     print("="*60)
 
     formulas = """
-    # 以下公式可在Excel中配合Bloomberg API使用:
+# 單一公司展望查詢:
+=BDP("IBM US Equity", "RTG_SP_OUTLOOK")
+=BDP("IBM US Equity", "RTG_MOODY_OUTLOOK")
+=BDP("IBM US Equity", "RTG_FITCH_OUTLOOK")
 
-    # 1. 獲取S&P展望
-    =BDP("AAPL US Equity", "RTG_SP_OUTLOOK")
+# 歷史展望查詢:
+=BDH("IBM US Equity", "RTG_SP_OUTLOOK", "2014-01-01", "2024-01-01")
 
-    # 2. 獲取Moody's展望
-    =BDP("AAPL US Equity", "RTG_MOODY_OUTLOOK")
+# 違約狀態:
+=BDP("TICKER Equity", "IS_DEFAULTED")
+=BDP("TICKER Equity", "DEFAULT_DATE")
 
-    # 3. 獲取Fitch展望
-    =BDP("AAPL US Equity", "RTG_FITCH_OUTLOOK")
+# 評級:
+=BDP("IBM US Equity", "RTG_SP_LT_LC_ISSUER_CREDIT")
+=BDP("IBM US Equity", "RTG_MOODY_LONG_TERM")
+=BDP("IBM US Equity", "RTG_FITCH_LT_ISSUER_DEFAULT")
 
-    # 4. 獲取違約狀態
-    =BDP("AAPL US Equity", "IS_DEFAULTED")
-
-    # 5. 獲取違約日期
-    =BDP("AAPL US Equity", "DEFAULT_DATE")
-
-    # 6. 獲取歷史展望（時間序列）
-    =BDH("AAPL US Equity", "RTG_SP_OUTLOOK", "2015-01-01", "2024-12-31")
-
-    # 7. 批量獲取多家公司展望
-    =BDS("BERC Index", "INDX_MEMBERS")  # 先獲取成分股
-    # 然後對每家公司使用BDP獲取展望
+# 批量查詢（需配合INDEX功能）:
+=BDS("SPX Index", "INDX_MWEIGHT")
     """
-
     print(formulas)
-    return formulas
 
 
 # ============================================================================
-# 數據視覺化（如果需要）
-# ============================================================================
-
-def visualize_results(results_df):
-    """
-    視覺化分析結果
-    需要matplotlib和seaborn
-    """
-    try:
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
-        # 設定中文字體
-        plt.rcParams['font.sans-serif'] = ['Arial Unicode MS', 'SimHei', 'Microsoft YaHei']
-        plt.rcParams['axes.unicode_minus'] = False
-
-        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-        # 圖1: 各信評機構正向展望分布
-        if 'Rating_Agency' in results_df.columns:
-            agency_counts = results_df['Rating_Agency'].value_counts()
-            axes[0, 0].bar(agency_counts.index, agency_counts.values)
-            axes[0, 0].set_title('各信評機構正向展望數量')
-            axes[0, 0].set_xlabel('信評機構')
-            axes[0, 0].set_ylabel('數量')
-
-        # 圖2: 違約率時間趨勢
-        if 'Year' in results_df.columns and 'Default_Rate' in results_df.columns:
-            axes[0, 1].plot(results_df['Year'], results_df['Default_Rate'], marker='o')
-            axes[0, 1].set_title('正向展望後2年違約率趨勢')
-            axes[0, 1].set_xlabel('年份')
-            axes[0, 1].set_ylabel('違約率 (%)')
-
-        # 圖3: 按產業的違約率
-        if 'Sector' in results_df.columns and 'Default_Rate' in results_df.columns:
-            sector_rates = results_df.groupby('Sector')['Default_Rate'].mean()
-            axes[1, 0].barh(sector_rates.index, sector_rates.values)
-            axes[1, 0].set_title('各產業正向展望後違約率')
-            axes[1, 0].set_xlabel('違約率 (%)')
-
-        # 圖4: 評級與違約關係
-        if 'Rating' in results_df.columns and 'Defaulted' in results_df.columns:
-            rating_default = results_df.groupby('Rating')['Defaulted'].mean() * 100
-            axes[1, 1].bar(rating_default.index, rating_default.values)
-            axes[1, 1].set_title('各評級等級的違約率')
-            axes[1, 1].set_xlabel('評級')
-            axes[1, 1].set_ylabel('違約率 (%)')
-
-        plt.tight_layout()
-        plt.savefig('positive_outlook_default_analysis.png', dpi=300, bbox_inches='tight')
-        plt.show()
-
-        print("\n圖表已儲存為: positive_outlook_default_analysis.png")
-
-    except ImportError:
-        print("需要安裝matplotlib和seaborn進行視覺化")
-        print("pip install matplotlib seaborn")
-
-
-# ============================================================================
-# 執行主程式
+# 執行
 # ============================================================================
 
 if __name__ == "__main__":
-    main()
-
-    # 輸出Excel公式參考
-    generate_excel_formulas()
+    results = main()
+    print_excel_formulas()
