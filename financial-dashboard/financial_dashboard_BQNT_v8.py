@@ -189,6 +189,40 @@ COLORS = {
     'gold': '#d29922', 'purple': '#a371f7', 'bg_card': '#161b22'
 }
 
+# ==================== BQL Helper Functions ====================
+def bql_to_dataframe(response):
+    """
+    Convert BQL response to DataFrame using the new recommended method
+    Handles both old combined_df and new DataFrame approaches
+    """
+    try:
+        # Try new method first (for newer BQNT versions)
+        if hasattr(response, 'single'):
+            return response.single().df()
+        elif hasattr(response, 'combine'):
+            return response.combine().df()
+        else:
+            # Iterate through response items
+            dfs = []
+            for item in response:
+                if hasattr(item, 'df'):
+                    df = item.df()
+                    dfs.append(df)
+            if dfs:
+                return pd.concat(dfs)
+            # Last resort: try old method with warning suppressed
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                return bql.combined_df(response)
+    except Exception as e:
+        # Fallback to old method
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return bql.combined_df(response)
+
+
 # ==================== BQL Data Fetching Functions ====================
 def bql_fetch_yield_curve(tickers_dict, curve_name="Yield Curve"):
     """
@@ -226,19 +260,19 @@ def bql_fetch_yield_curve(tickers_dict, curve_name="Yield Curve"):
         # Today's yield
         request = bql.Request(tickers, {'PX_LAST': bq.data.px_last()})
         response = bq.execute(request)
-        df_today = bql.combined_df(response)
+        df_today = bql_to_dataframe(response)
 
         # Month start
         month_start_date = datetime.now().replace(day=1).strftime('%Y-%m-%d')
         request_month = bql.Request(tickers, {'PX_LAST': bq.data.px_last(dates=month_start_date)})
         response_month = bq.execute(request_month)
-        df_month = bql.combined_df(response_month)
+        df_month = bql_to_dataframe(response_month)
 
         # Year start
         year_start_date = datetime(datetime.now().year, 1, 1).strftime('%Y-%m-%d')
         request_year = bql.Request(tickers, {'PX_LAST': bq.data.px_last(dates=year_start_date)})
         response_year = bq.execute(request_year)
-        df_year = bql.combined_df(response_year)
+        df_year = bql_to_dataframe(response_year)
 
         for ticker in tickers:
             result['today'].append(round(float(df_today.loc[ticker, 'PX_LAST']), 2))
@@ -290,32 +324,42 @@ def bql_fetch_price_data(tickers_dict, data_type="Price"):
         tickers = list(tickers_dict.values())
         names = list(tickers_dict.keys())
 
-        # Current price and daily change
-        request = bql.Request(tickers, {
-            'PX_LAST': bq.data.px_last(),
-            'CHG_PCT_1D': bq.data.chg_pct_1d()
-        })
-        response = bq.execute(request)
-        df = bql.combined_df(response)
+        # Current price
+        request_today = bql.Request(tickers, {'PX_LAST': bq.data.px_last()})
+        response_today = bq.execute(request_today)
+        df_today = bql_to_dataframe(response_today)
 
-        # YTD change
+        # Yesterday's price for daily change calculation
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        request_yesterday = bql.Request(tickers, {'PX_LAST': bq.data.px_last(dates=yesterday)})
+        response_yesterday = bq.execute(request_yesterday)
+        df_yesterday = bql_to_dataframe(response_yesterday)
+
+        # Year start price for YTD calculation
         year_start_date = datetime(datetime.now().year, 1, 1).strftime('%Y-%m-%d')
         request_ytd = bql.Request(tickers, {'PX_LAST': bq.data.px_last(dates=year_start_date)})
         response_ytd = bq.execute(request_ytd)
-        df_ytd = bql.combined_df(response_ytd)
+        df_ytd = bql_to_dataframe(response_ytd)
 
         for i, ticker in enumerate(tickers):
             name = names[i]
-            current = float(df.loc[ticker, 'PX_LAST'])
-            change = float(df.loc[ticker, 'CHG_PCT_1D'])
-            ytd_start = float(df_ytd.loc[ticker, 'PX_LAST'])
-            ytd = ((current - ytd_start) / ytd_start) * 100 if ytd_start != 0 else 0
+            try:
+                current = float(df_today.loc[ticker, 'PX_LAST'])
+                yesterday_price = float(df_yesterday.loc[ticker, 'PX_LAST'])
+                ytd_start = float(df_ytd.loc[ticker, 'PX_LAST'])
 
-            result[name] = {
-                'value': round(current, 4 if current < 10 else 2),
-                'change': round(change, 2),
-                'ytd': round(ytd, 2)
-            }
+                # Calculate daily change
+                change = ((current - yesterday_price) / yesterday_price) * 100 if yesterday_price != 0 else 0
+                # Calculate YTD change
+                ytd = ((current - ytd_start) / ytd_start) * 100 if ytd_start != 0 else 0
+
+                result[name] = {
+                    'value': round(current, 4 if current < 10 else 2),
+                    'change': round(change, 2),
+                    'ytd': round(ytd, 2)
+                }
+            except Exception as inner_e:
+                result[name] = {'value': 100, 'change': 0, 'ytd': 0}
 
     except Exception as e:
         print(f"   ⚠️ BQL error for {data_type}: {str(e)}")
