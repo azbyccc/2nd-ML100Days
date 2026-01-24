@@ -279,7 +279,7 @@ def bql_fetch_yield_curve(tickers_dict, curve_name="Yield Curve"):
         'source': 'Bloomberg BQL'
     }
 
-    # 合理的預設值 (2025年1月24日更新)
+    # 合理的預設值 (2026年1月24日更新)
     fallback = {
         'US': {'2Y': 4.27, '5Y': 4.35, '10Y': 4.23, '30Y': 4.45},
         'DE': {'2Y': 2.05, '5Y': 2.12, '10Y': 2.48, '30Y': 2.68}
@@ -339,7 +339,7 @@ def bql_fetch_price_data(tickers_dict, data_type="Price"):
     """
     result = {}
 
-    # 合理的預設值 (2025年1月24日更新)
+    # 合理的預設值 (2026年1月24日更新)
     FALLBACK_VALUES = {
         # 股票指數
         'S&P 500': 6118, 'Dow Jones': 44565, 'NASDAQ': 20053, 'Russell 2000': 2287,
