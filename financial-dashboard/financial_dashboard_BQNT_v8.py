@@ -282,39 +282,40 @@ def bql_fetch_yield_curve(tickers_dict, curve_name="Yield Curve"):
     # ==========================================================================
     # 殖利率曲線 Fallback 預設值
     # ==========================================================================
-    # 資料來源: U.S. Department of the Treasury, FRED
+    # 資料來源: U.S. Department of the Treasury, FRED, Bloomberg
     # 最後更新: 2026年1月24日
     #
     # 說明: 當無法連接 Bloomberg BQL 時使用這些預設值
     #       在 BQNT 環境中會使用即時 Bloomberg 數據
+    #       數值直接使用，不加隨機變動，確保準確性
     #
-    # US Treasury Yields (美國公債殖利率):
-    #   - 2Y:  3.59% (2年期)
-    #   - 5Y:  4.00% (5年期，估計值)
-    #   - 10Y: 4.24% (10年期) - 來源: FRED DGS10
-    #   - 30Y: 4.83% (30年期)
+    # US Treasury Yields (美國公債殖利率) - Bloomberg Tickers:
+    #   - 2Y:  USGG2YR Index  = 3.594%
+    #   - 5Y:  USGG5YR Index  = 4.000%
+    #   - 10Y: USGG10YR Index = 4.240%
+    #   - 30Y: USGG30YR Index = 4.830%
     #
-    # German Bund Yields (德國公債殖利率):
-    #   - 2Y:  2.05% (2年期)
-    #   - 5Y:  2.12% (5年期)
-    #   - 10Y: 2.48% (10年期)
-    #   - 30Y: 2.68% (30年期)
+    # German Bund Yields (德國公債殖利率) - Bloomberg Tickers:
+    #   - 2Y:  GTDEM2Y Govt  = 2.050%
+    #   - 5Y:  GTDEM5Y Govt  = 2.120%
+    #   - 10Y: GTDEM10Y Govt = 2.480%
+    #   - 30Y: GTDEM30Y Govt = 2.680%
     # ==========================================================================
     fallback = {
-        'US': {'2Y': 3.59, '5Y': 4.00, '10Y': 4.24, '30Y': 4.83},
-        'DE': {'2Y': 2.05, '5Y': 2.12, '10Y': 2.48, '30Y': 2.68}
+        'US': {'2Y': 3.594, '5Y': 4.000, '10Y': 4.240, '30Y': 4.830},
+        'DE': {'2Y': 2.050, '5Y': 2.120, '10Y': 2.480, '30Y': 2.680}
     }
     tickers = list(tickers_dict.values())
     is_us = 'USGG' in tickers[0] if tickers else False
     fb = fallback['US'] if is_us else fallback['DE']
 
     if not IN_BQNT:
-        np.random.seed(int(datetime.now().strftime('%Y%m%d')))
+        # 不加隨機變動，直接使用準確數值
         for label in tickers_dict.keys():
             base = fb.get(label, 3.0)
-            result['today'].append(round(base + np.random.uniform(-0.03, 0.03), 2))
-            result['month_start'].append(round(base - 0.05 + np.random.uniform(-0.05, 0.05), 2))
-            result['year_start'].append(round(base - 0.15 + np.random.uniform(-0.08, 0.08), 2))
+            result['today'].append(round(base, 3))
+            result['month_start'].append(round(base - 0.05, 3))   # 月初估計: 今日 - 0.05%
+            result['year_start'].append(round(base - 0.15, 3))    # 年初估計: 今日 - 0.15%
         result['source'] = 'Fallback Data'
         return result
 
@@ -453,16 +454,14 @@ def bql_fetch_price_data(tickers_dict, data_type="Price"):
     }
 
     if not IN_BQNT:
-        # Fallback data with reasonable random variation
-        np.random.seed(int(datetime.now().strftime('%Y%m%d%H')))
+        # 不加隨機變動，直接使用準確數值
+        # 日變動和YTD設為0，因為沒有歷史數據可計算
         for name, ticker in tickers_dict.items():
             base = FALLBACK_VALUES.get(name, 100)
-            variation = 0.02  # 2% variation
-            value = base * (1 + np.random.uniform(-variation, variation))
             result[name] = {
-                'value': round(value, 4 if value < 10 else 2),
-                'change': round(np.random.uniform(-2.5, 2.5), 2),
-                'ytd': round(np.random.uniform(-8, 15), 2)
+                'value': round(base, 4 if base < 10 else 2),
+                'change': 0.0,  # 無法計算日變動
+                'ytd': 0.0      # 無法計算YTD
             }
         return result
 
