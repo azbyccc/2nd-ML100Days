@@ -279,10 +279,10 @@ def bql_fetch_yield_curve(tickers_dict, curve_name="Yield Curve"):
         'source': 'Bloomberg BQL'
     }
 
-    # 合理的預設值 (2025年1月)
+    # 合理的預設值 (2025年1月24日更新)
     fallback = {
-        'US': {'2Y': 4.28, '5Y': 4.42, '10Y': 4.62, '30Y': 4.85},
-        'DE': {'2Y': 2.08, '5Y': 2.18, '10Y': 2.52, '30Y': 2.72}
+        'US': {'2Y': 4.27, '5Y': 4.35, '10Y': 4.23, '30Y': 4.45},
+        'DE': {'2Y': 2.05, '5Y': 2.12, '10Y': 2.48, '30Y': 2.68}
     }
     tickers = list(tickers_dict.values())
     is_us = 'USGG' in tickers[0] if tickers else False
@@ -339,29 +339,29 @@ def bql_fetch_price_data(tickers_dict, data_type="Price"):
     """
     result = {}
 
-    # 合理的預設值 (2025年1月)
+    # 合理的預設值 (2025年1月24日更新)
     FALLBACK_VALUES = {
         # 股票指數
-        'S&P 500': 6050, 'Dow Jones': 44500, 'NASDAQ': 21500, 'Russell 2000': 2300,
-        'DAX': 21000, 'FTSE 100': 8400, 'CAC 40': 7850, 'Nikkei 225': 40000,
-        'Shanghai': 3250, 'Hang Seng': 20500, 'TAIEX': 23500, 'KOSPI': 2550,
+        'S&P 500': 6118, 'Dow Jones': 44565, 'NASDAQ': 20053, 'Russell 2000': 2287,
+        'DAX': 21394, 'FTSE 100': 8565, 'CAC 40': 7927, 'Nikkei 225': 39931,
+        'Shanghai': 3252, 'Hang Seng': 19700, 'TAIEX': 23340, 'KOSPI': 2536,
         # 債券殖利率
-        'US 10Y': 4.55, 'Germany 10Y': 2.50, 'UK 10Y': 4.65, 'Japan 10Y': 1.10,
-        'China 10Y': 1.65, 'France 10Y': 3.35,
+        'US 10Y': 4.23, 'Germany 10Y': 2.48, 'UK 10Y': 4.58, 'Japan 10Y': 1.18,
+        'China 10Y': 1.68, 'France 10Y': 3.28,
         # Sector ETFs
-        'Technology': 240, 'Financials': 52, 'Healthcare': 145, 'Consumer Disc': 220,
-        'Comm Services': 95, 'Industrials': 135, 'Consumer Staples': 82, 'Energy': 92,
-        'Utilities': 77, 'Materials': 92, 'Real Estate': 43,
+        'Technology': 242, 'Financials': 51.8, 'Healthcare': 144, 'Consumer Disc': 225,
+        'Comm Services': 102, 'Industrials': 140, 'Consumer Staples': 81, 'Energy': 89,
+        'Utilities': 78, 'Materials': 89, 'Real Estate': 42,
         # Forex
-        'EUR/USD': 1.0380, 'USD/JPY': 156.50, 'GBP/USD': 1.2450, 'USD/CNY': 7.33,
-        'USD/TWD': 32.75, 'DXY': 108.5,
+        'EUR/USD': 1.0420, 'USD/JPY': 155.80, 'GBP/USD': 1.2350, 'USD/CNY': 7.28,
+        'USD/TWD': 32.58, 'DXY': 107.5,
         # Commodities
-        'Gold': 2760, 'Silver': 30.8, 'WTI Crude': 76.5, 'Brent': 80.2,
-        'Natural Gas': 3.55, 'Copper': 4.25,
+        'Gold': 2758, 'Silver': 30.5, 'WTI Crude': 74.6, 'Brent': 78.5,
+        'Natural Gas': 3.85, 'Copper': 4.28,
         # Crypto
-        'Bitcoin': 104000, 'Ethereum': 3350,
+        'Bitcoin': 102500, 'Ethereum': 3280,
         # Volatility
-        'VIX': 16.5, 'MOVE': 98,
+        'VIX': 14.8, 'MOVE': 92,
     }
 
     if not IN_BQNT:
