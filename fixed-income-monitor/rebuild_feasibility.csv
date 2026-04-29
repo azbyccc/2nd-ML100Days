@@ -1,0 +1,68 @@
+field_name,rebuild_grade,grade_reason,bloomberg_equivalent,alternative_definition,data_gap_risk,implemented,collector
+US_TREASURY_2Y,A,Official FRED API + Treasury.gov. Exact same data as Bloomberg USGG2YR.,USGG2YR Index,Same data; Bloomberg shows T+0 same day; FRED has same-day via DGS2,low,yes,fred / treasury_gov
+US_TREASURY_5Y,A,Official FRED API + Treasury.gov. Exact same data.,USGG5YR Index,Same data,low,yes,fred / treasury_gov
+US_TREASURY_10Y,A,Official FRED API + Treasury.gov. Exact same data.,USGG10YR Index,Same data,low,yes,fred / treasury_gov
+US_TREASURY_30Y,A,Official FRED API + Treasury.gov. Exact same data.,USGG30YR Index,Same data,low,yes,fred / treasury_gov
+US_TIPS_5Y,A,FRED DFII5 — official Fed source. Same as Bloomberg USGGT05Y.,USGGT05Y Index,Same data,low,yes,fred
+US_TIPS_10Y,A,FRED DFII10 — official Fed source.,USGGT10Y Index,Same data,low,yes,fred
+US_BEI_5Y,A,FRED T5YIE — official Fed calculation.,USGGBE05 Index,Same data,low,yes,fred
+US_BEI_10Y,A,FRED T10YIE — official Fed calculation.,USGGBE10 Index,Same data,low,yes,fred
+US_CURVE_10Y2Y,A,FRED T10Y2Y — direct spread series.,USYC2Y10 Index,Same data,low,yes,fred
+US_SOFR,A,FRED SOFR — FRBNY official daily publication.,SOFR Index,Same data,low,yes,fred
+US_EFFR,A,FRED EFFR — FRBNY official daily publication.,FEDL01 Index,Same data,low,yes,fred
+US_IG_OAS,A,FRED BAMLC0A0CM — ICE BofA via FRED. T+1 publish lag vs Bloomberg T+0.,C0A0 Index (OAS),T+1 lag; same methodology as Bloomberg C0A0,low,yes,fred
+US_HY_OAS,A,FRED BAMLH0A0HYM2 — ICE BofA via FRED. T+1 lag.,H0A0 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_BBB_OAS,A,FRED BAMLC0A4CBBB — T+1 lag.,C0A4 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_BB_OAS,A,FRED BAMLH0A1HYBB — T+1 lag.,H0A1 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_B_OAS,A,FRED BAMLH0A2HYB — T+1 lag.,H0A2 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_CCC_OAS,A,FRED BAMLH0A3HYC — T+1 lag.,H0A3 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_FA_OAS,A,FRED BAMLH0A4FANDOAS — T+1 lag.,HUC0 Index (OAS),T+1 lag; same methodology,low,yes,fred
+US_IG_YIELD,A,FRED BAMLC0A0CMEY — T+1 lag.,C0A0 Index (YTW),T+1 lag; same methodology,low,yes,fred
+US_HY_YIELD,A,FRED BAMLH0A0HYM2EY — T+1 lag.,H0A0 Index (YTW),T+1 lag; same methodology,low,yes,fred
+US_BB_YIELD,A,FRED BAMLH0A1HYBBEY — T+1 lag.,H0A1 Index (YTW),T+1 lag,low,yes,fred
+US_B_YIELD,A,FRED BAMLH0A2HYBEY — T+1 lag.,H0A2 Index (YTW),T+1 lag,low,yes,fred
+US_CCC_YIELD,A,FRED BAMLH0A3HYCEY — T+1 lag.,H0A3 Index (YTW),T+1 lag,low,yes,fred
+EU_HY_OAS,A,FRED BAMLHE00EHYIOAS — ICE BofA Euro HY via FRED.,HE00 Index (OAS),T+1 lag; same methodology,low,yes,fred
+EU_HY_YIELD,A,FRED BAMLHE00EHYIEY — ICE BofA Euro HY yield.,HE00 Index (YTW),T+1 lag; same methodology,low,yes,fred
+EM_HY_OAS,B,ICE BofA EM HY via FRED. Different from JPM CEMBI — covers corporate only not sovereign.,CEMBI Broad HY (D),ICE BofA covers EM corporates; CEMBI covers different universe. Not a substitute for EMBI.,medium,yes,fred
+EM_IG_OAS,B,ICE BofA EM IG via FRED. Different from JPM CEMBI.,CEMBI Broad IG (D),Same caveat as EM_HY_OAS,medium,yes,fred
+EM_HY_YIELD,B,ICE BofA EM HY yield via FRED. Same universe caveat.,CEMBI Broad HY Yield (D),Same caveat,medium,yes,fred
+EM_IG_YIELD,B,ICE BofA EM IG yield via FRED.,CEMBI Broad IG Yield (D),Same caveat,medium,yes,fred
+EU_EURIBOR_1W,A,ECB SDMX API — official ECB money market reference rates.,EUR001W Index,Same data; ECB is authoritative source,low,yes,ecb
+EU_EURIBOR_3M,A,ECB SDMX API — official ECB Euribor 3M.,EUR003M Index,Same data,low,yes,ecb
+EU_EURIBOR_6M,A,ECB SDMX API — official ECB Euribor 6M.,EUR006M Index,Same data,low,yes,ecb
+EU_ESTR,A,ECB SDMX API — official ESTR (replaces EONIA).,ESTRON Index,Same data; ECB is authoritative source,low,yes,ecb
+EU_ECB_DFR,A,ECB SDMX API — official ECB deposit facility rate.,EURR002W Index,Same data,low,yes,ecb
+EU_AAA_YIELD_2Y,A,ECB yield curve API — Svensson model AAA euro area.,GDBR2 Index (proxy),ECB covers AAA-rated euro area as group; not single-country Bloomberg tickers,low,yes,ecb
+EU_AAA_YIELD_10Y,A,ECB yield curve API — Svensson model AAA euro area 10Y.,GDBR10 Index (proxy),Same caveat — group average not Germany alone,low,yes,ecb
+EQ_SP500,A,yfinance ^GSPC — exact same index.,SPX Index,Same data; yfinance uses Yahoo adjusted close,low,yes,yahoo
+EQ_NASDAQ,A,yfinance ^IXIC.,CCMP Index,Same data,low,yes,yahoo
+EQ_RUSSELL2000,A,yfinance ^RUT.,RTY Index,Same data,low,yes,yahoo
+EQ_FTSE100,A,yfinance ^FTSE.,UKX Index,Same data,low,yes,yahoo
+EQ_DAX,A,yfinance ^GDAXI. Note: DAX is total-return (includes dividends).,DAX Index,Same data; note TR vs PR convention matches Bloomberg DAX,low,yes,yahoo
+EQ_CAC40,A,yfinance ^FCHI.,CAC Index,Same data,low,yes,yahoo
+EQ_NIKKEI,A,yfinance ^N225.,NKY Index,Same data,low,yes,yahoo
+EQ_HSI,A,yfinance ^HSI.,HSI Index,Same data,low,yes,yahoo
+EQ_KOSPI,A,yfinance ^KS11.,KOSPI Index,Same data,low,yes,yahoo
+EQ_TAIEX,A,yfinance ^TWII.,TWSE Index,Same data,low,yes,yahoo
+EQ_BOVESPA,A,yfinance ^BVSP.,IBOV Index,Same data,low,yes,yahoo
+EQ_SHCOMP,A,yfinance 000001.SS. Note: China A-shares market has idiosyncratic trading halts.,SHCOMP Index,Same data; note CNY-denominated local index,low,yes,yahoo
+FX_EURUSD,A,yfinance EURUSD=X — spot rate.,EURUSD Curncy,Mid-market spot; Bloomberg shows bid/ask; marginal difference for monitoring,low,yes,yahoo
+FX_GBPUSD,A,yfinance GBPUSD=X.,GBPUSD Curncy,Same caveat as EURUSD,low,yes,yahoo
+FX_USDJPY,A,yfinance JPY=X.,USDJPY Curncy,Same caveat,low,yes,yahoo
+FX_USDTWD,B,yfinance TWD=X gives NDF/offshore rate. CBC onshore fixing differs by small margin.,USDTWD Curncy,NDF vs onshore fixing gap typically 0.1-0.5%; acceptable for monitoring,medium,yes,yahoo
+FX_USDBRL,A,yfinance BRL=X.,USDBRL Curncy,Same caveat as EURUSD,low,yes,yahoo
+FX_USDMXN,A,yfinance MXN=X.,USDMXN Curncy,Same caveat,low,yes,yahoo
+CMD_WTI,A,yfinance CL=F — front-month WTI futures. Roll creates monthly gap.,CL1 Comdty,Front-month continuous; roll-adjusted series not available free,low,yes,yahoo
+CMD_BRENT,A,yfinance BZ=F — front-month Brent.,CO1 Comdty,Same roll caveat,low,yes,yahoo
+CMD_GOLD,A,yfinance GC=F — front-month gold.,GC1 Comdty,Same roll caveat; level accurate for monitoring,low,yes,yahoo
+CMD_NATGAS,A,yfinance NG=F — Henry Hub front-month.,NG1 Comdty,Same roll caveat,low,yes,yahoo
+CMD_CORN,A,yfinance ZC=F — CBOT corn front-month.,C 1 Comdty,Same roll caveat,low,yes,yahoo
+CMD_WHEAT,A,yfinance ZW=F — CBOT wheat front-month.,W 1 Comdty,Same roll caveat,low,yes,yahoo
+VIX,A,CBOE official CSV. Exact same data as Bloomberg VIX Index.,VIX Index,Same data; CBOE is authoritative source,low,yes,cboe
+JPM_EMBI_SPREAD,D,JPMorgan proprietary index. No public source. Cannot reconstruct without Bloomberg/JPM license.,JPEIGLBL Index (spread),Use EM_HY_OAS / EM_IG_OAS as approximation only (different universe),high,no,none
+JPM_CEMBI_IG_OAS,D,JPMorgan CEMBI Broad IG — proprietary. No public equivalent.,JBCDGIG Index,No substitute available for exact replication,high,no,none
+JPM_CEMBI_HY_OAS,D,JPMorgan CEMBI Broad HY — proprietary.,JBCDGHY Index,No substitute available,high,no,none
+TW_GOVT_10Y,C,CBC open data endpoint is unstable; may require manual extraction.,GVTW10YR Index,CBC website publishes yields but access is unreliable; consider manual update,medium,partial,taiwan_cbc
+TW_GOVT_20Y,C,Same as TW_GOVT_10Y — CBC open data.,GVTW20YR Index,Same caveat,medium,partial,taiwan_cbc
+TW_GOVT_30Y,C,Same as TW_GOVT_10Y.,GVTW30YR Index,Same caveat,medium,partial,taiwan_cbc

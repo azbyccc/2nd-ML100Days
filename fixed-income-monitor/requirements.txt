@@ -1,0 +1,32 @@
+# Fixed Income Market Monitor — Dependencies
+# Install: pip install -r requirements.txt
+
+# ── Core HTTP ─────────────────────────────────────────────────────────────────
+requests>=2.31.0
+tenacity>=8.2.0          # retry/backoff
+
+# ── Data processing ───────────────────────────────────────────────────────────
+pandas>=2.1.0
+numpy>=1.26.0
+
+# ── Schema validation ─────────────────────────────────────────────────────────
+pydantic>=2.5.0
+
+# ── YAML config ───────────────────────────────────────────────────────────────
+pyyaml>=6.0.1
+
+# ── Yahoo Finance (unofficial wrapper) ───────────────────────────────────────
+yfinance>=0.2.36
+
+# ── Parquet storage (optional but recommended) ────────────────────────────────
+pyarrow>=14.0.0          # falls back to CSV if not installed
+
+# ── Excel output (optional) ──────────────────────────────────────────────────
+openpyxl>=3.1.2
+
+# ── XML parsing ───────────────────────────────────────────────────────────────
+lxml>=5.0.0
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+pytest-mock>=3.12.0

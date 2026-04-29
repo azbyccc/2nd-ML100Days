@@ -1,0 +1,1 @@
+__pycache__/\n*.pyc\n*.pyo\n.pytest_cache/\ndata/history/\ndata/raw/\ndata/processed/\nlogs/*.log\n!logs/.gitkeep

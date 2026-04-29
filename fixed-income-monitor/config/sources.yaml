@@ -1,0 +1,322 @@
+# Fixed Income Market Monitor - Data Source Configuration
+# Non-Bloomberg replacement for fixed income market monitoring
+# Last updated: 2026-04-29
+
+global:
+  request_timeout: 30
+  retry_attempts: 3
+  retry_backoff_factor: 2.0
+  rate_limit_default_rps: 1.0
+  user_agent: "FixedIncomeMonitor/1.0 (research; non-commercial)"
+  log_level: INFO
+  output_dir: "data/processed"
+  raw_dir: "data/raw"
+
+# ============================================================
+# FRED (Federal Reserve Economic Data) - St. Louis Fed
+# FREE, official, highly recommended
+# ============================================================
+fred:
+  enabled: true
+  base_url: "https://api.stlouisfed.org/fred"
+  api_key_env: "FRED_API_KEY"  # Get free key at https://fred.stlouisfed.org/docs/api/api_key.html
+  rate_limit_rps: 0.5          # Be conservative - free tier limit
+  robots_url: "https://fred.stlouisfed.org/robots.txt"
+  legal_risk: low
+  series:
+    # US Treasury Yields
+    us_treasury_2y:   { id: "DGS2",    name: "US Treasury 2Y Yield", unit: "percent" }
+    us_treasury_5y:   { id: "DGS5",    name: "US Treasury 5Y Yield", unit: "percent" }
+    us_treasury_10y:  { id: "DGS10",   name: "US Treasury 10Y Yield", unit: "percent" }
+    us_treasury_30y:  { id: "DGS30",   name: "US Treasury 30Y Yield", unit: "percent" }
+    us_treasury_1y:   { id: "DGS1",    name: "US Treasury 1Y Yield", unit: "percent" }
+    us_treasury_3m:   { id: "DGS3MO",  name: "US Treasury 3M Yield", unit: "percent" }
+
+    # TIPS (Treasury Inflation-Protected Securities)
+    us_tips_5y:       { id: "DFII5",   name: "US TIPS 5Y Real Yield", unit: "percent" }
+    us_tips_10y:      { id: "DFII10",  name: "US TIPS 10Y Real Yield", unit: "percent" }
+    us_tips_20y:      { id: "DFII20",  name: "US TIPS 20Y Real Yield", unit: "percent" }
+    us_tips_30y:      { id: "DFII30",  name: "US TIPS 30Y Real Yield", unit: "percent" }
+
+    # Breakeven Inflation Rates
+    us_bei_2y:        { id: "T5YIFR",  name: "5Y5Y Forward Breakeven", unit: "percent" }
+    us_bei_5y:        { id: "T5YIE",   name: "5Y Breakeven Inflation Rate", unit: "percent" }
+    us_bei_10y:       { id: "T10YIE",  name: "10Y Breakeven Inflation Rate", unit: "percent" }
+
+    # Money Market / Overnight Rates
+    sofr:             { id: "SOFR",    name: "Secured Overnight Financing Rate", unit: "percent" }
+    effr:             { id: "EFFR",    name: "Effective Federal Funds Rate", unit: "percent" }
+    obfr:             { id: "OBFR",    name: "Overnight Bank Funding Rate", unit: "percent" }
+
+    # Yield Curve Spreads
+    curve_2y10y:      { id: "T10Y2Y",  name: "10Y-2Y Treasury Spread", unit: "percent" }
+    curve_3m10y:      { id: "T10Y3M",  name: "10Y-3M Treasury Spread", unit: "percent" }
+
+    # ICE BofA US Credit Indices (via FRED - EXCELLENT SOURCE)
+    us_hy_yield:      { id: "BAMLH0A0HYM2",     name: "ICE BofA US HY Master II OAS", unit: "basis_points" }
+    us_ig_yield:      { id: "BAMLC0A0CM",        name: "ICE BofA US Corp Master OAS", unit: "basis_points" }
+    us_aaa_oas:       { id: "BAMLC0A1CAAA",      name: "ICE BofA AAA US Corp OAS", unit: "basis_points" }
+    us_aa_oas:        { id: "BAMLC0A2CAA",       name: "ICE BofA AA US Corp OAS", unit: "basis_points" }
+    us_a_oas:         { id: "BAMLC0A3CA",        name: "ICE BofA A US Corp OAS", unit: "basis_points" }
+    us_bbb_oas:       { id: "BAMLC0A4CBBB",      name: "ICE BofA BBB US Corp OAS", unit: "basis_points" }
+    us_bb_oas:        { id: "BAMLH0A1HYBB",      name: "ICE BofA BB US HY OAS", unit: "basis_points" }
+    us_b_oas:         { id: "BAMLH0A2HYB",       name: "ICE BofA B US HY OAS", unit: "basis_points" }
+    us_ccc_oas:       { id: "BAMLH0A3HYC",       name: "ICE BofA CCC/Below HY OAS", unit: "basis_points" }
+    us_hy_yield_total: { id: "BAMLH0A0HYM2EY",  name: "ICE BofA US HY Effective Yield", unit: "percent" }
+    us_ig_yield_total: { id: "BAMLC0A0CMEY",     name: "ICE BofA US Corp Effective Yield", unit: "percent" }
+    us_hy_bb_yield:   { id: "BAMLH0A1HYBBEY",    name: "ICE BofA BB US HY Effective Yield", unit: "percent" }
+    us_hy_b_yield:    { id: "BAMLH0A2HYBEY",     name: "ICE BofA B US HY Effective Yield", unit: "percent" }
+    us_hy_ccc_yield:  { id: "BAMLH0A3HYCEY",     name: "ICE BofA CCC HY Effective Yield", unit: "percent" }
+    us_fallen_angel_oas: { id: "BAMLH0A4FANDOAS", name: "ICE BofA Fallen Angel HY OAS", unit: "basis_points" }
+
+    # ICE BofA Euro Credit Indices (via FRED)
+    eu_hy_oas:        { id: "BAMLHE00EHYIOAS",   name: "ICE BofA Euro HY OAS", unit: "basis_points" }
+    eu_ig_oas:        { id: "BAMLHE4BHEIGOAS",   name: "ICE BofA Euro Corp OAS", unit: "basis_points" }
+    eu_hy_yield:      { id: "BAMLHE00EHYIEY",    name: "ICE BofA Euro HY Effective Yield", unit: "percent" }
+
+    # EM Credit Indices (via FRED - PARTIAL)
+    em_hy_oas:        { id: "BAMLEMHBHYCROAS",   name: "ICE BofA EM HY Corp OAS", unit: "basis_points" }
+    em_ig_oas:        { id: "BAMLEMIBHGCROAS",   name: "ICE BofA EM IG Corp OAS", unit: "basis_points" }
+    em_hy_yield:      { id: "BAMLEMHBHYCRPIEY",  name: "ICE BofA EM HY Corp Effective Yield", unit: "percent" }
+    em_ig_yield:      { id: "BAMLEMIBHGCRPIEY",  name: "ICE BofA EM IG Corp Effective Yield", unit: "percent" }
+
+    # Sovereign / Global
+    de_10y:           { id: "IRLTLT01DEM156N",   name: "Germany LT Govt Bond Yield", unit: "percent" }
+    jp_10y:           { id: "IRLTLT01JPM156N",   name: "Japan LT Govt Bond Yield", unit: "percent" }
+    uk_10y:           { id: "IRLTLT01GBM156N",   name: "UK LT Govt Bond Yield", unit: "percent" }
+    fr_10y:           { id: "IRLTLT01FRM156N",   name: "France LT Govt Bond Yield", unit: "percent" }
+    it_10y:           { id: "IRLTLT01ITM156N",   name: "Italy LT Govt Bond Yield", unit: "percent" }
+    es_10y:           { id: "IRLTLT01ESM156N",   name: "Spain LT Govt Bond Yield", unit: "percent" }
+    ca_10y:           { id: "IRLTLT01CAM156N",   name: "Canada LT Govt Bond Yield", unit: "percent" }
+    au_10y:           { id: "IRLTLT01AUM156N",   name: "Australia LT Govt Bond Yield", unit: "percent" }
+
+# ============================================================
+# US Treasury Direct
+# FREE, official US government source
+# ============================================================
+treasury_gov:
+  enabled: true
+  yield_curve_url: "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml-data-download"
+  daily_xml_pattern: "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml-data-download?data=daily_treasury_yield_curve&field_tdr_date_value={YYYY}{MM}"
+  rate_limit_rps: 0.2
+  robots_url: "https://home.treasury.gov/robots.txt"
+  legal_risk: low
+  format: xml
+
+# ============================================================
+# ECB (European Central Bank) SDMX API
+# FREE, official ECB data
+# ============================================================
+ecb:
+  enabled: true
+  base_url: "https://data-api.ecb.europa.eu/service/data"
+  rate_limit_rps: 0.5
+  robots_url: "https://www.ecb.europa.eu/robots.txt"
+  legal_risk: low
+  series:
+    euribor_3m:  { dataset: "FM", key: "B.U2.EUR.RT0.MM.EURIBOR3MD_.HSTA", name: "Euribor 3M" }
+    euribor_6m:  { dataset: "FM", key: "B.U2.EUR.RT0.MM.EURIBOR6MD_.HSTA", name: "Euribor 6M" }
+    eur_ois_1y:  { dataset: "FM", key: "B.U2.EUR.RT0.MM.ESTROIS1Y.HSTA",  name: "EUR OIS 1Y" }
+    de_2y_yield: { dataset: "YC", key: "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_2Y", name: "Germany 2Y" }
+    de_5y_yield: { dataset: "YC", key: "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_5Y", name: "Germany 5Y" }
+    de_10y_yield:{ dataset: "YC", key: "B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y",name: "Germany 10Y" }
+
+# ============================================================
+# Yahoo Finance (via yfinance library)
+# Quasi-public, no official API, subject to change
+# Use for: equity indices, FX, commodity futures
+# ============================================================
+yahoo_finance:
+  enabled: true
+  rate_limit_rps: 0.5
+  legal_risk: medium
+  robots_url: "https://finance.yahoo.com/robots.txt"
+  note: "yfinance library abstracts Yahoo Finance API - check ToS"
+  equity_tickers:
+    # North America
+    SP500:     "^GSPC"
+    NASDAQ:    "^IXIC"
+    DJIA:      "^DJI"
+    RUSSELL:   "^RUT"
+    TSX:       "^GSPTSE"
+    # Europe
+    FTSE:      "^FTSE"
+    DAX:       "^GDAXI"
+    CAC40:     "^FCHI"
+    FTSEMIB:   "FTSEMIB.MI"
+    IBEX:      "^IBEX"
+    AEX:       "^AEX"
+    SMI:       "^SSMI"
+    # Latam
+    MEXBOL:    "^MXX"
+    BOVESPA:   "^BVSP"
+    IPSA:      "^IPSA"
+    # EEMA
+    TURKEY:    "XU100.IS"
+    SOUTH_AFRICA: "^J203"
+    RUSSIA:    "IMOEX.ME"
+    SAUDI:     "^TASI"
+    UAE:       "^ADI"
+    ISRAEL:    "^TA125"
+    POLAND:    "^WIG20"
+    HUNGARY:   "^BUX"
+    CZECH:     "^PX"
+    # Asia
+    NIKKEI:    "^N225"
+    KOSPI:     "^KS11"
+    TAIEX:     "^TWII"
+    HSI:       "^HSI"
+    SHCOMP:    "000001.SS"
+    CSI300:    "000300.SS"
+    SENSEX:    "^BSESN"
+    NIFTY:     "^NSEI"
+    STI:       "^STI"
+    JCI:       "^JKSE"
+    KLCI:      "^KLSE"
+    SET:       "^SET.BK"
+    PSEI:      "PSEi.PS"
+    ASX:       "^AXJO"
+    NZX:       "^NZ50"
+
+  fx_tickers:
+    # G10 (vs USD)
+    EURUSD:  "EURUSD=X"
+    GBPUSD:  "GBPUSD=X"
+    USDJPY:  "JPY=X"
+    USDCHF:  "CHF=X"
+    AUDUSD:  "AUDUSD=X"
+    NZDUSD:  "NZDUSD=X"
+    USDCAD:  "CAD=X"
+    USDNOK:  "NOK=X"
+    USDSEK:  "SEK=X"
+    USDDKK:  "DKK=X"
+    # Latam
+    USDMXN:  "MXN=X"
+    USDBRL:  "BRL=X"
+    USDCLP:  "CLP=X"
+    USDCOP:  "COP=X"
+    USDPEN:  "PEN=X"
+    # EEMA
+    USDTRY:  "TRY=X"
+    USDZAR:  "ZAR=X"
+    USDILS:  "ILS=X"
+    USDPLN:  "PLN=X"
+    USDHUF:  "HUF=X"
+    USDCZK:  "CZK=X"
+    USDRON:  "RON=X"
+    # Asia
+    USDKRW:  "KRW=X"
+    USDTWD:  "TWD=X"
+    USDHKD:  "HKD=X"
+    USDCNY:  "CNY=X"
+    USDINR:  "INR=X"
+    USDTHB:  "THB=X"
+    USDSGD:  "SGD=X"
+    USDIDR:  "IDR=X"
+    USDMYR:  "MYR=X"
+    USDPHP:  "PHP=X"
+
+  commodity_tickers:
+    WTI:         "CL=F"
+    BRENT:       "BZ=F"
+    NATURAL_GAS: "NG=F"
+    GOLD:        "GC=F"
+    SILVER:      "SI=F"
+    CORN:        "ZC=F"
+    WHEAT:       "ZW=F"
+    SOYBEANS:    "ZS=F"
+    COTTON:      "CT=F"
+    COPPER:      "HG=F"
+
+  bond_proxies:
+    US_10Y_YIELD: "^TNX"
+    US_5Y_YIELD:  "^FVX"
+    US_30Y_YIELD: "^TYX"
+
+# ============================================================
+# Investing.com - USE WITH CAUTION
+# Public-facing but has anti-scraping measures
+# Prefer API/official sources over this
+# ============================================================
+investing_com:
+  enabled: false  # Disabled by default - use official sources when possible
+  base_url: "https://www.investing.com"
+  robots_url: "https://www.investing.com/robots.txt"
+  legal_risk: high
+  note: "High legal risk - ToS prohibits scraping. Use only if no other source available."
+
+# ============================================================
+# CBOE (Chicago Board Options Exchange)
+# FREE, official, for VIX data
+# ============================================================
+cboe:
+  enabled: true
+  vix_history_url: "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
+  rate_limit_rps: 0.2
+  robots_url: "https://www.cboe.com/robots.txt"
+  legal_risk: low
+
+# ============================================================
+# World Government Bonds
+# Public website - check robots.txt before use
+# ============================================================
+world_govt_bonds:
+  enabled: false  # Check robots.txt first - may prohibit scraping
+  base_url: "https://www.worldgovernmentbonds.com"
+  robots_url: "https://www.worldgovernmentbonds.com/robots.txt"
+  legal_risk: medium
+  note: "Must verify robots.txt allows crawling before enabling"
+
+# ============================================================
+# Taiwan Central Bank (CBC)
+# Official source for TWD yields
+# ============================================================
+taiwan_cbc:
+  enabled: true
+  base_url: "https://www.cbc.gov.tw"
+  bond_yield_url: "https://www.cbc.gov.tw/tw/cp-521-932-40d60-1.html"
+  rate_limit_rps: 0.1
+  robots_url: "https://www.cbc.gov.tw/robots.txt"
+  legal_risk: low
+  note: "Official Taiwan central bank; may require manual data extraction"
+
+# ============================================================
+# JPM EMBI / CEMBI
+# RESTRICTED - Proprietary JPMorgan indices
+# No public source available
+# ============================================================
+jpm_embi:
+  enabled: false
+  access_level: paid
+  legal_risk: high
+  alternative: "Use FRED ICE BofA EM series as approximation"
+  note: >
+    JPM EMBI and CEMBI indices require Bloomberg/JPMorgan terminal access.
+    Cannot be freely replicated. Use ICE BofA EM indices from FRED as proxy,
+    but methodology differs significantly.
+
+# ============================================================
+# Fallback / Manual Data
+# For fields that cannot be automatically retrieved
+# ============================================================
+manual_sources:
+  enabled: true
+  file_path: "data/raw/manual_overrides.csv"
+  note: >
+    Some fields (EMBI country-level, CEMBI by rating, some EM local yields)
+    must be maintained manually or sourced from paid data vendors.
+    This file allows manual override of missing values.
+
+# ============================================================
+# Output Configuration
+# ============================================================
+output:
+  formats:
+    - csv
+    - xlsx
+  csv_path: "data/processed/fixed_income_monitor_{date}.csv"
+  xlsx_path: "data/processed/fixed_income_monitor_{date}.xlsx"
+  date_format: "%Y%m%d"
+  missing_value_marker: "N/A"
+  percentile_lookback_years: 1
+  history_storage: "data/raw/history_{series_id}.csv"

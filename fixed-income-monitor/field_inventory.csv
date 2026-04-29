@@ -1,0 +1,88 @@
+field_name,block,display_name_zh,display_name_en,definition,asset_class,region,unit,frequency,tenor_bucket,rating_bucket,needs_history,rebuild_grade,collector
+US_TREASURY_2Y,US_RATES,美國公債 2Y,US Treasury 2Y Yield,US nominal par yield 2-year maturity,rates,US,percent,daily,2y,na,yes,A,fred / treasury_gov
+US_TREASURY_5Y,US_RATES,美國公債 5Y,US Treasury 5Y Yield,US nominal par yield 5-year maturity,rates,US,percent,daily,5y,na,yes,A,fred / treasury_gov
+US_TREASURY_10Y,US_RATES,美國公債 10Y,US Treasury 10Y Yield,US nominal par yield 10-year maturity,rates,US,percent,daily,10y,na,yes,A,fred / treasury_gov
+US_TREASURY_30Y,US_RATES,美國公債 30Y,US Treasury 30Y Yield,US nominal par yield 30-year maturity,rates,US,percent,daily,30y,na,yes,A,fred / treasury_gov
+US_TREASURY_1M,US_RATES,美國公債 1M,US Treasury 1M Yield,US nominal par yield 1-month maturity,rates,US,percent,daily,1m,na,yes,A,treasury_gov
+US_TREASURY_3M,US_RATES,美國公債 3M,US Treasury 3M Yield,US nominal par yield 3-month maturity,rates,US,percent,daily,3m,na,yes,A,fred / treasury_gov
+US_TREASURY_6M,US_RATES,美國公債 6M,US Treasury 6M Yield,US nominal par yield 6-month maturity,rates,US,percent,daily,6m,na,yes,A,treasury_gov
+US_TREASURY_1Y,US_RATES,美國公債 1Y,US Treasury 1Y Yield,US nominal par yield 1-year maturity,rates,US,percent,daily,1y,na,yes,A,fred / treasury_gov
+US_TIPS_5Y,US_RATES,TIPS 5Y 實質殖利率,US TIPS 5Y Real Yield,Real yield from inflation-protected securities 5Y,rates,US,percent,daily,5y,na,yes,A,fred
+US_TIPS_10Y,US_RATES,TIPS 10Y 實質殖利率,US TIPS 10Y Real Yield,Real yield from inflation-protected securities 10Y,rates,US,percent,daily,10y,na,yes,A,fred
+US_BEI_5Y,US_RATES,5Y 損益平衡通膨率,5Y Breakeven Inflation Rate,5Y nominal minus 5Y TIPS real yield,rates,US,percent,daily,5y,na,yes,A,fred
+US_BEI_10Y,US_RATES,10Y 損益平衡通膨率,10Y Breakeven Inflation Rate,10Y nominal minus 10Y TIPS real yield,rates,US,percent,daily,10y,na,yes,A,fred
+US_CURVE_10Y2Y,US_RATES,殖利率曲線 10Y-2Y,US Yield Curve 10Y-2Y,10Y Treasury minus 2Y Treasury yield spread,rates,US,percent,daily,na,na,yes,A,fred
+US_SOFR,MONEY_MARKET,SOFR,Secured Overnight Financing Rate,Overnight Treasury repo rate; LIBOR replacement,rates,US,percent,daily,overnight,na,yes,A,fred
+US_EFFR,MONEY_MARKET,聯邦基金利率,Effective Federal Funds Rate,Effective overnight rate for interbank USD lending,rates,US,percent,daily,overnight,na,yes,A,fred
+US_IG_OAS,US_CREDIT,美國 IG OAS,US IG Corp Option-Adjusted Spread,ICE BofA US Corp Master OAS vs Treasuries,credit,US,basis_points,daily,na,ig,yes,A,fred
+US_HY_OAS,US_CREDIT,美國 HY OAS,US HY Option-Adjusted Spread,ICE BofA US HY Master II OAS vs Treasuries,credit,US,basis_points,daily,na,hy,yes,A,fred
+US_BBB_OAS,US_CREDIT,美國 BBB OAS,US BBB Corp OAS,ICE BofA BBB US Corp OAS vs Treasuries,credit,US,basis_points,daily,na,bbb,yes,A,fred
+US_BB_OAS,US_CREDIT,美國 BB OAS,US BB HY OAS,ICE BofA BB US HY OAS vs Treasuries,credit,US,basis_points,daily,na,bb,yes,A,fred
+US_B_OAS,US_CREDIT,美國 B OAS,US B HY OAS,ICE BofA B US HY OAS vs Treasuries,credit,US,basis_points,daily,na,b,yes,A,fred
+US_CCC_OAS,US_CREDIT,美國 CCC OAS,US CCC HY OAS,ICE BofA CCC/Below US HY OAS vs Treasuries,credit,US,basis_points,daily,na,ccc,yes,A,fred
+US_FA_OAS,US_CREDIT,Fallen Angel OAS,US Fallen Angel HY OAS,ICE BofA Fallen Angel HY OAS vs Treasuries,credit,US,basis_points,daily,na,hy,yes,A,fred
+US_IG_YIELD,US_CREDIT,美國 IG Effective Yield,US IG Corp Effective Yield,ICE BofA US Corp Master weighted avg yield to worst,credit,US,percent,daily,na,ig,yes,A,fred
+US_HY_YIELD,US_CREDIT,美國 HY Effective Yield,US HY Corp Effective Yield,ICE BofA US HY Master II weighted avg yield to worst,credit,US,percent,daily,na,hy,yes,A,fred
+US_BB_YIELD,US_CREDIT,美國 BB Effective Yield,US BB HY Yield,ICE BofA BB US HY effective yield to worst,credit,US,percent,daily,na,bb,yes,A,fred
+US_B_YIELD,US_CREDIT,美國 B Effective Yield,US B HY Yield,ICE BofA B US HY effective yield to worst,credit,US,percent,daily,na,b,yes,A,fred
+US_CCC_YIELD,US_CREDIT,美國 CCC Effective Yield,US CCC HY Yield,ICE BofA CCC US HY effective yield to worst,credit,US,percent,daily,na,ccc,yes,A,fred
+EU_HY_OAS,EU_CREDIT,歐洲 HY OAS,Euro HY OAS,ICE BofA Euro HY OAS vs German Bunds,credit,EU,basis_points,daily,na,hy,yes,A,fred
+EU_HY_YIELD,EU_CREDIT,歐洲 HY Effective Yield,Euro HY Effective Yield,ICE BofA Euro HY effective yield,credit,EU,percent,daily,na,hy,yes,A,fred
+EM_HY_OAS,EM_CREDIT,新興市場 HY OAS,EM HY Corp OAS,ICE BofA EM HY Corp OAS; NOT JPM CEMBI methodology,credit,EM,basis_points,daily,na,hy,yes,B,fred
+EM_IG_OAS,EM_CREDIT,新興市場 IG OAS,EM IG Corp OAS,ICE BofA EM IG Corp OAS; NOT JPM CEMBI methodology,credit,EM,basis_points,daily,na,ig,yes,B,fred
+EM_HY_YIELD,EM_CREDIT,新興市場 HY Yield,EM HY Corp Yield,ICE BofA EM HY Corp effective yield,credit,EM,percent,daily,na,hy,yes,B,fred
+EM_IG_YIELD,EM_CREDIT,新興市場 IG Yield,EM IG Corp Yield,ICE BofA EM IG Corp effective yield,credit,EM,percent,daily,na,ig,yes,B,fred
+EU_EURIBOR_1W,MONEY_MARKET,Euribor 1W,Euribor 1 Week,Euro Interbank Offered Rate 1 week,rates,EU,percent,daily,1w,na,yes,A,ecb
+EU_EURIBOR_1M,MONEY_MARKET,Euribor 1M,Euribor 1 Month,Euro Interbank Offered Rate 1 month,rates,EU,percent,daily,1m,na,yes,A,ecb
+EU_EURIBOR_3M,MONEY_MARKET,Euribor 3M,Euribor 3 Month,Euro Interbank Offered Rate 3 month,rates,EU,percent,daily,3m,na,yes,A,ecb
+EU_EURIBOR_6M,MONEY_MARKET,Euribor 6M,Euribor 6 Month,Euro Interbank Offered Rate 6 month,rates,EU,percent,daily,6m,na,yes,A,ecb
+EU_EURIBOR_12M,MONEY_MARKET,Euribor 12M,Euribor 12 Month,Euro Interbank Offered Rate 12 month,rates,EU,percent,daily,1y,na,yes,A,ecb
+EU_ESTR,MONEY_MARKET,ESTR,Euro Short-Term Rate,ECB overnight rate replacing EONIA,rates,EU,percent,daily,overnight,na,yes,A,ecb
+EU_ECB_DFR,MONEY_MARKET,ECB 存款便利利率,ECB Deposit Facility Rate,ECB deposit rate (policy rate floor),rates,EU,percent,daily,overnight,na,yes,A,ecb
+EU_ECB_MRO,MONEY_MARKET,ECB 主要再融資利率,ECB Main Refi Rate,ECB main refinancing operations rate,rates,EU,percent,daily,overnight,na,yes,A,ecb
+EU_AAA_YIELD_2Y,EU_RATES,歐元區 AAA 2Y,Euro Area AAA Govt Yield 2Y,ECB Svensson yield curve AAA-rated euro-area govts 2Y,rates,EU,percent,daily,2y,aaa,yes,A,ecb
+EU_AAA_YIELD_5Y,EU_RATES,歐元區 AAA 5Y,Euro Area AAA Govt Yield 5Y,ECB Svensson yield curve AAA-rated euro-area govts 5Y,rates,EU,percent,daily,5y,aaa,yes,A,ecb
+EU_AAA_YIELD_10Y,EU_RATES,歐元區 AAA 10Y,Euro Area AAA Govt Yield 10Y,ECB Svensson yield curve AAA-rated euro-area govts 10Y,rates,EU,percent,daily,10y,aaa,yes,A,ecb
+EU_AAA_YIELD_30Y,EU_RATES,歐元區 AAA 30Y,Euro Area AAA Govt Yield 30Y,ECB Svensson yield curve AAA-rated euro-area govts 30Y,rates,EU,percent,daily,30y,aaa,yes,A,ecb
+EQ_SP500,EQUITY_US,S&P 500,S&P 500 Index,US large-cap equity index (500 stocks),equity,US,index_level,daily,na,na,yes,A,yahoo
+EQ_NASDAQ,EQUITY_US,Nasdaq 綜合,Nasdaq Composite,US tech-heavy broad equity index,equity,US,index_level,daily,na,na,yes,A,yahoo
+EQ_RUSSELL2000,EQUITY_US,Russell 2000,Russell 2000 Index,US small-cap equity index,equity,US,index_level,daily,na,na,yes,A,yahoo
+EQ_TSX,EQUITY_NA,加拿大 TSX,Canada TSX Composite,Canadian large-cap equity index,equity,CA,index_level,daily,na,na,yes,A,yahoo
+EQ_FTSE100,EQUITY_EU,英國 FTSE 100,UK FTSE 100,UK large-cap equity index,equity,UK,index_level,daily,na,na,yes,A,yahoo
+EQ_DAX,EQUITY_EU,德國 DAX,Germany DAX,German large-cap performance index (total return),equity,EU,index_level,daily,na,na,yes,A,yahoo
+EQ_CAC40,EQUITY_EU,法國 CAC 40,France CAC 40,French large-cap equity index,equity,EU,index_level,daily,na,na,yes,A,yahoo
+EQ_IBEX,EQUITY_EU,西班牙 IBEX 35,Spain IBEX 35,Spanish large-cap equity index,equity,EU,index_level,daily,na,na,yes,A,yahoo
+EQ_BOVESPA,EQUITY_LATAM,巴西 Bovespa,Brazil Bovespa,Brazilian main equity index,equity,LATAM,index_level,daily,na,na,yes,A,yahoo
+EQ_IPC,EQUITY_LATAM,墨西哥 IPC,Mexico IPC,Mexican main equity index,equity,LATAM,index_level,daily,na,na,yes,A,yahoo
+EQ_NIKKEI,EQUITY_ASIA,日本 Nikkei 225,Japan Nikkei 225,Japanese large-cap equity index (price-weighted),equity,JP,index_level,daily,na,na,yes,A,yahoo
+EQ_HSI,EQUITY_ASIA,香港 恒生,Hang Seng Index,Hong Kong large-cap equity index,equity,ASIA,index_level,daily,na,na,yes,A,yahoo
+EQ_KOSPI,EQUITY_ASIA,韓國 KOSPI,Korea KOSPI,Korean broad equity market index,equity,KR,index_level,daily,na,na,yes,A,yahoo
+EQ_TAIEX,EQUITY_ASIA,台灣加權 TAIEX,Taiwan TAIEX,Taiwan weighted stock index,equity,TW,index_level,daily,na,na,yes,A,yahoo
+EQ_ASX200,EQUITY_ASIA,澳洲 ASX 200,Australia ASX 200,Australian large-cap equity index,equity,AU,index_level,daily,na,na,yes,A,yahoo
+EQ_SHCOMP,EQUITY_ASIA,上海綜合,Shanghai Composite,Chinese A-share broad market index,equity,ASIA,index_level,daily,na,na,yes,A,yahoo
+FX_EURUSD,FX_G10,歐元 EUR/USD,EUR/USD,Euro vs US Dollar (EUR strength = higher),fx,EU,fx_rate,daily,na,na,yes,A,yahoo
+FX_GBPUSD,FX_G10,英鎊 GBP/USD,GBP/USD,British Pound vs US Dollar,fx,UK,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDJPY,FX_G10,日圓 USD/JPY,USD/JPY,US Dollar vs Japanese Yen (higher = weaker JPY),fx,JP,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDCHF,FX_G10,瑞郎 USD/CHF,USD/CHF,US Dollar vs Swiss Franc,fx,EU,fx_rate,daily,na,na,yes,A,yahoo
+FX_AUDUSD,FX_G10,澳元 AUD/USD,AUD/USD,Australian Dollar vs US Dollar,fx,AU,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDCNY,FX_ASIA,人民幣 USD/CNY,USD/CNY,US Dollar vs Chinese Renminbi (onshore),fx,ASIA,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDKRW,FX_ASIA,韓元 USD/KRW,USD/KRW,US Dollar vs Korean Won,fx,KR,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDTWD,FX_ASIA,台幣 USD/TWD,USD/TWD,US Dollar vs Taiwan Dollar (NDF rate),fx,TW,fx_rate,daily,na,na,yes,B,yahoo
+FX_USDBRL,FX_LATAM,巴西雷亞爾 USD/BRL,USD/BRL,US Dollar vs Brazilian Real,fx,LATAM,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDMXN,FX_LATAM,墨西哥披索 USD/MXN,USD/MXN,US Dollar vs Mexican Peso,fx,LATAM,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDTRY,FX_EEMA,土耳其里拉 USD/TRY,USD/TRY,US Dollar vs Turkish Lira,fx,EEMA,fx_rate,daily,na,na,yes,A,yahoo
+FX_USDZAR,FX_EEMA,南非蘭特 USD/ZAR,USD/ZAR,US Dollar vs South African Rand,fx,EEMA,fx_rate,daily,na,na,yes,A,yahoo
+CMD_WTI,COMMODITY,WTI 原油,WTI Crude Oil,West Texas Intermediate crude oil front-month futures (USD/bbl),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_BRENT,COMMODITY,布蘭特原油,Brent Crude Oil,Brent crude oil front-month futures (USD/bbl),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_GOLD,COMMODITY,黃金,Gold,Gold front-month futures (USD/troy oz),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_SILVER,COMMODITY,白銀,Silver,Silver front-month futures (USD/troy oz),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_NATGAS,COMMODITY,天然氣,Natural Gas,Henry Hub natural gas front-month futures (USD/MMBtu),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_CORN,COMMODITY,玉米,Corn,CBOT corn front-month futures (USD/bushel),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+CMD_WHEAT,COMMODITY,小麥,Wheat,CBOT wheat front-month futures (USD/bushel),commodity,GLOBAL,usd_per_unit,daily,na,na,yes,A,yahoo
+VIX,VOLATILITY,VIX 恐慌指數,CBOE VIX,CBOE Volatility Index — 30-day implied vol of S&P 500 options,equity,US,index_level,daily,na,na,yes,A,cboe
+JPM_EMBI_SPREAD,EM_SOVEREIGN,JPM EMBI Global Spread,JPM EMBI Global Spread,Sovereign EM USD bond spread vs US Treasuries — PROPRIETARY,rates,EM,basis_points,daily,na,na,yes,D,none
+JPM_CEMBI_IG_OAS,EM_CREDIT,JPM CEMBI IG OAS,JPM CEMBI Broad IG OAS — PROPRIETARY,rates,EM,basis_points,daily,na,ig,yes,D,none
+JPM_CEMBI_HY_OAS,EM_CREDIT,JPM CEMBI HY OAS,JPM CEMBI Broad HY OAS — PROPRIETARY,rates,EM,basis_points,daily,na,hy,yes,D,none
+TW_GOVT_10Y,TW_RATES,台灣公債 10Y,Taiwan Govt Bond 10Y Yield,Taiwan local-currency 10Y government bond yield,rates,TW,percent,daily,10y,na,yes,C,taiwan_cbc
+TW_GOVT_20Y,TW_RATES,台灣公債 20Y,Taiwan Govt Bond 20Y Yield,Taiwan local-currency 20Y government bond yield,rates,TW,percent,daily,20y,na,yes,C,taiwan_cbc
+TW_GOVT_30Y,TW_RATES,台灣公債 30Y,Taiwan Govt Bond 30Y Yield,Taiwan local-currency 30Y government bond yield,rates,TW,percent,daily,30y,na,yes,C,taiwan_cbc
