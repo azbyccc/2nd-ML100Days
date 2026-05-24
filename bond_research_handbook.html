@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公債研究方法論手冊</title>
+  <style>
+    :root {
+      --primary:   #1a3a5c;
+      --accent:    #2e7db5;
+      --accent2:   #4db8ff;
+      --bg:        #f4f7fa;
+      --card:      #ffffff;
+      --border:    #d0dce8;
+      --text:      #1e2d3d;
+      --muted:     #607080;
+      --highlight: #fff8e1;
+      --tag-bg:    #e3f0fb;
+      --tag-text:  #1a5c8a;
+      --green:     #2e7d52;
+      --green-bg:  #e8f5ee;
+      --red:       #c0392b;
+      --red-bg:    #fdecea;
+      --sidebar-w: 280px;
+      --radius:    10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans TC', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary);
+      color: #e8f0f8;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform .3s;
+    }
+
+    #sidebar-header {
+      padding: 22px 18px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+    }
+
+    #sidebar-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.4;
+      color: #fff;
+    }
+
+    #sidebar-header p {
+      font-size: .75rem;
+      color: #9bbcd8;
+      margin-top: 4px;
+    }
+
+    #search-box {
+      margin: 14px 14px 10px;
+      position: relative;
+    }
+
+    #search-box input {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      font-size: .85rem;
+      outline: none;
+      transition: background .2s;
+    }
+
+    #search-box input::placeholder { color: #9bbcd8; }
+    #search-box input:focus { background: rgba(255,255,255,.2); }
+
+    #search-box .search-icon {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      color: #9bbcd8;
+      font-size: .9rem;
+    }
+
+    .nav-section {
+      padding: 6px 0;
+    }
+
+    .nav-section-title {
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #7aacce;
+      padding: 10px 18px 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 18px;
+      cursor: pointer;
+      border-radius: 0;
+      font-size: .82rem;
+      color: #c8ddef;
+      transition: background .15s, color .15s;
+      text-decoration: none;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,.1);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: rgba(46,125,181,.35);
+      color: #fff;
+      border-left-color: var(--accent2);
+    }
+
+    .nav-item .num {
+      font-size: .7rem;
+      font-weight: 700;
+      background: rgba(255,255,255,.15);
+      border-radius: 4px;
+      padding: 1px 6px;
+      min-width: 24px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ── MAIN ── */
+    #main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 0;
+    }
+
+    #topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 32px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #topbar h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .badge-count {
+      background: var(--accent);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 12px;
+    }
+
+    #filter-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-size: .78rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all .2s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    #content {
+      padding: 32px;
+      max-width: 1100px;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 40px 0 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-header:first-of-type { margin-top: 0; }
+
+    .section-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* ── METHOD CARD ── */
+    .method-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+
+    .method-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.09); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--card);
+      border-bottom: 1px solid transparent;
+      transition: background .15s;
+    }
+
+    .card-header:hover { background: #f8fafd; }
+
+    .card-header.open {
+      border-bottom-color: var(--border);
+      background: #f0f6ff;
+    }
+
+    .method-num {
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .85rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .card-header-text { flex: 1; }
+
+    .card-header-text h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.3;
+    }
+
+    .card-header-text .tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+    .tag {
+      font-size: .68rem;
+      font-weight: 700;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .chevron {
+      font-size: 1rem;
+      color: var(--muted);
+      transition: transform .2s;
+    }
+
+    .chevron.open { transform: rotate(180deg); }
+
+    .card-body {
+      display: none;
+      padding: 22px;
+    }
+
+    .card-body.open { display: block; }
+
+    /* ── CONTENT ELEMENTS ── */
+    .card-body h4 {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 18px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .card-body h4:first-child { margin-top: 0; }
+
+    .card-body h4::before {
+      content: '';
+      width: 4px; height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .card-body p {
+      font-size: .88rem;
+      line-height: 1.75;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .card-body ul, .card-body ol {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+
+    .card-body li {
+      font-size: .88rem;
+      line-height: 1.75;
+      margin-bottom: 3px;
+    }
+
+    /* Tables */
+    .tbl-wrap { overflow-x: auto; margin: 10px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .83rem;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+      padding: 9px 14px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:nth-child(even) td { background: #f7fafd; }
+    tr:hover td { background: #eef4fb; }
+
+    /* Code */
+    pre {
+      background: #1e2d3d;
+      color: #c8ddef;
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: .8rem;
+      line-height: 1.65;
+      overflow-x: auto;
+      margin: 10px 0;
+      font-family: 'Consolas', 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    code {
+      background: #e8f0f8;
+      color: #1a3a5c;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: .82rem;
+      font-family: 'Consolas', monospace;
+    }
+
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* Formula box */
+    .formula {
+      background: #f0f6ff;
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 18px;
+      margin: 10px 0;
+      font-family: 'Consolas', Georgia, serif;
+      font-size: .9rem;
+      color: var(--primary);
+      overflow-x: auto;
+    }
+
+    /* Info / Note boxes */
+    .box {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      font-size: .85rem;
+      line-height: 1.65;
+    }
+
+    .box-info  { background: var(--tag-bg);  border-left: 4px solid var(--accent); }
+    .box-warn  { background: var(--highlight); border-left: 4px solid #f0a500; }
+    .box-green { background: var(--green-bg); border-left: 4px solid var(--green); }
+    .box-red   { background: var(--red-bg);   border-left: 4px solid var(--red); }
+
+    .box strong { font-weight: 700; }
+
+    /* Paper cite */
+    .cite {
+      background: #f5f8fc;
+      border: 1px solid #d8e6f5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      font-size: .83rem;
+      line-height: 1.65;
+    }
+
+    .cite .cite-title {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .cite .cite-journal {
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    /* Steps */
+    .steps { counter-reset: step; }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 12px;
+      font-size: .86rem;
+      line-height: 1.65;
+      counter-increment: step;
+    }
+
+    .step::before {
+      content: counter(step);
+      min-width: 26px; height: 26px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── OVERVIEW CARDS ── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin: 0 0 36px;
+    }
+
+    .ov-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .ov-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 14px rgba(46,125,181,.15);
+      transform: translateY(-2px);
+    }
+
+    .ov-card .ov-num {
+      font-size: .72rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: .05em;
+    }
+
+    .ov-card .ov-title {
+      font-size: .84rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    .ov-card .ov-cat {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── BACK TO TOP ── */
+    #back-top {
+      position: fixed;
+      right: 24px; bottom: 24px;
+      width: 42px; height: 42px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      opacity: 0;
+      transition: opacity .3s;
+      z-index: 200;
+    }
+
+    #back-top.show { opacity: 1; }
+
+    /* ── SEARCH HIGHLIGHT ── */
+    .hl { background: #ffe66d; border-radius: 2px; }
+
+    /* ── HIDDEN by filter ── */
+    .method-card.hidden { display: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+      #sidebar { transform: translateX(-280px); width: 280px; }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; }
+      #content { padding: 16px; }
+      #topbar { padding: 12px 16px; }
+      #topbar h1 { font-size: 1rem; }
+      #filter-bar { display: none; }
+      #hamburger { display: flex; }
+    }
+
+    #hamburger {
+      display: none;
+      width: 36px; height: 36px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 99;
+    }
+
+    #overlay.show { display: block; }
+
+    /* ── DIVIDER ── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div id="sidebar-header">
+    <h2>📘 公債研究方法論手冊</h2>
+    <p>20 種核心方法與理論架構</p>
+  </div>
+
+  <div id="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="sidebar-search" placeholder="搜尋方法..." />
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">一、基本定價</div>
+    <a class="nav-item" href="#m1"><span class="num">01</span>殖利率曲線分析</a>
+    <a class="nav-item" href="#m2"><span class="num">02</span>期限結構理論</a>
+    <a class="nav-item" href="#m3"><span class="num">03</span>存續期間與凸性</a>
+    <a class="nav-item" href="#m4"><span class="num">04</span>無套利定價模型</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">二、利率模型</div>
+    <a class="nav-item" href="#m5"><span class="num">05</span>單因子利率模型</a>
+    <a class="nav-item" href="#m6"><span class="num">06</span>Nelson-Siegel 模型</a>
+    <a class="nav-item" href="#m7"><span class="num">07</span>HJM 框架</a>
+    <a class="nav-item" href="#m8"><span class="num">08</span>仿射期限結構模型</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">三、風險分析</div>
+    <a class="nav-item" href="#m9"><span class="num">09</span>信用風險分析</a>
+    <a class="nav-item" href="#m10"><span class="num">10</span>利率風險管理</a>
+    <a class="nav-item" href="#m11"><span class="num">11</span>通膨與實質利率</a>
+    <a class="nav-item" href="#m12"><span class="num">12</span>流動性風險分析</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">四、總體政策分析</div>
+    <a class="nav-item" href="#m13"><span class="num">13</span>財政永續性分析</a>
+    <a class="nav-item" href="#m14"><span class="num">14</span>貨幣政策傳導</a>
+    <a class="nav-item" href="#m15"><span class="num">15</span>總體因子模型</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">五、計量實證方法</div>
+    <a class="nav-item" href="#m16"><span class="num">16</span>VAR / SVAR</a>
+    <a class="nav-item" href="#m17"><span class="num">17</span>共整合 VECM</a>
+    <a class="nav-item" href="#m18"><span class="num">18</span>事件研究法</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">六、進階跨市場</div>
+    <a class="nav-item" href="#m19"><span class="num">19</span>相對價值分析</a>
+    <a class="nav-item" href="#m20"><span class="num">20</span>投資人結構與行為</a>
+  </div>
+</nav>
+
+<div id="overlay"></div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <button id="hamburger">☰</button>
+    <h1>公債研究方法論手冊</h1>
+    <span class="badge-count">20 種方法</span>
+    <div id="filter-bar">
+      <button class="filter-btn active" data-cat="all">全部</button>
+      <button class="filter-btn" data-cat="定價">基本定價</button>
+      <button class="filter-btn" data-cat="利率模型">利率模型</button>
+      <button class="filter-btn" data-cat="風險">風險分析</button>
+      <button class="filter-btn" data-cat="政策">政策分析</button>
+      <button class="filter-btn" data-cat="計量">計量實證</button>
+      <button class="filter-btn" data-cat="進階">進階分析</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- OVERVIEW -->
+    <div class="overview-grid" id="overview-grid">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- ════════════════ PART 1 ════════════════ -->
+    <div class="section-header" id="part1">
+      <div class="section-icon">📐</div>
+      <div>
+        <h2>第一部分：基本定價與利率理論</h2>
+      </div>
+    </div>
+
+    <!-- METHOD 1 -->
+    <div class="method-card" id="m1" data-cat="定價" data-title="殖利率曲線分析 Yield Curve Analysis">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">01</div>
+        <div class="card-header-text">
+          <h3>殖利率曲線分析 (Yield Curve Analysis)</h3>
+          <div class="tags">
+            <span class="tag">定價</span>
+            <span class="tag">預測</span>
+            <span class="tag">政策</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body open">
+        <h4>理論基礎</h4>
+        <p>殖利率曲線描述同一發行人（如美國財政部）在不同到期期限下的債券殖利率關係，曲線形狀是市場對未來經濟的集體預期。</p>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>形態</th><th>意涵</th><th>歷史案例</th></tr>
+            <tr><td>正斜率 (Normal)</td><td>經濟擴張期，長期風險溢酬高</td><td>2010–2013 美國復甦期</td></tr>
+            <tr><td>平坦 (Flat)</td><td>經濟轉折點，不確定性高</td><td>2006 年 Q1</td></tr>
+            <tr><td>倒掛 (Inverted)</td><td>衰退領先指標，短率 &gt; 長率</td><td>2022 Q4–2023</td></tr>
+          </table>
+        </div>
+
+        <h4>關鍵學術文獻</h4>
+        <div class="cite">
+          <span class="cite-title">Estrella & Mishkin (1998)</span><br/>
+          "Predicting U.S. Recessions: Financial Variables as Leading Indicators"<br/>
+          <span class="cite-journal">Review of Economics and Statistics</span><br/>
+          <strong>核心發現：</strong>10Y-3M 利差對未來 4–6 季 GDP 衰退的預測力優於其他財務指標，Probit 模型 R² 達 0.3 以上。
+        </div>
+        <div class="cite">
+          <span class="cite-title">Campbell & Shiller (1991)</span><br/>
+          "Yield Spreads and Interest Rate Movements: A Bird's Eye View"<br/>
+          <span class="cite-journal">Review of Economic Studies</span><br/>
+          <strong>核心發現：</strong>殖利率利差能否預測短期利率變動，部分支持預期假說。
+        </div>
+
+        <h4>實作步驟</h4>
+        <div class="steps">
+          <div class="step"><div>蒐集資料（Fed H.15 報表、Bloomberg、台灣央行），取得 1M, 3M, 6M, 1Y, 2Y, 5Y, 10Y, 30Y 殖利率日資料。</div></div>
+          <div class="step"><div>計算關鍵利差：10Y-2Y（市場最常追蹤）、10Y-3M（學術研究偏好）。</div></div>
+          <div class="step"><div>建立 Probit 預測模型：P(recession) = Φ(α + β × spread)，k = 4, 6, 8 季。</div></div>
+          <div class="step"><div>歷史回測：比對 1970 年至今美國 8 次衰退，倒掛後平均 12–18 個月衰退發生。</div></div>
+        </div>
+
+        <h4>實際案例</h4>
+        <div class="box box-info">
+          <strong>台灣央行研究處（2023）：</strong>分析台灣 10Y-2Y 利差，發現受 Fed 升息影響，2022 年底曲線趨於平坦，但因台灣央行升幅較小，倒掛程度遠低於美國，反映兩國貨幣政策分歧。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 2 -->
+    <div class="method-card" id="m2" data-cat="定價" data-title="到期期限結構理論 Term Structure of Interest Rates">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">02</div>
+        <div class="card-header-text">
+          <h3>到期期限結構理論 (Term Structure of Interest Rates)</h3>
+          <div class="tags">
+            <span class="tag">定價</span>
+            <span class="tag">理論</span>
+            <span class="tag">QE</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>純粹預期理論 (Pure Expectations Theory)</h4>
+        <p><strong>核心命題：</strong>長期利率 = 未來短期利率的幾何平均值</p>
+        <div class="formula">(1 + R₀ₙ)ⁿ = (1 + R₀₁)(1 + E[R₁₂])···(1 + E[Rₙ₋₁ₙ])</div>
+        <p>批評：忽略風險溢酬，遠期利率對未來即期利率的預測力偏低。</p>
+        <div class="cite">
+          <span class="cite-title">Fama (1984)</span> — "The Information in the Term Structure" — <span class="cite-journal">Journal of Financial Economics</span>
+        </div>
+
+        <h4>流動性偏好理論 (Liquidity Preference Theory)</h4>
+        <div class="formula">R₀ₙ = (1/n) Σ E[rₖₖ₊₁] + Term_Premium_n</div>
+        <div class="cite">
+          <span class="cite-title">Adrian, Crump & Moench (2013) — ACM Model</span><br/>
+          美聯儲紐約分行定期公布 ACM 期限溢酬估計值。<br/>
+          <strong>發現：</strong>美國 10Y 期限溢酬從 1990 年代 ~150bps 下降至 2010 年代負值，反映全球儲蓄過剩（Bernanke 2005 "Saving Glut" 假說）。
+        </div>
+
+        <h4>市場區隔理論 (Market Segmentation Theory)</h4>
+        <p>不同到期區間有其特定的供需結構，彼此不可完全替代。解釋 Fed QE 壓低長端殖利率的機制。</p>
+        <div class="cite">
+          <span class="cite-title">Vayanos & Vila (2021)</span><br/>
+          "A Preferred-Habitat Model of the Term Structure of Interest Rates"<br/>
+          <span class="cite-journal">Econometrica</span>
+        </div>
+
+        <h4>三理論比較</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>理論</th><th>長短債替代性</th><th>期限溢酬</th><th>適用場景</th></tr>
+            <tr><td>純粹預期</td><td>完全替代</td><td>無</td><td>基準模型</td></tr>
+            <tr><td>流動性偏好</td><td>高替代</td><td>正且遞增</td><td>一般市場</td></tr>
+            <tr><td>市場區隔</td><td>低替代</td><td>由供需決定</td><td>QE 環境</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 3 -->
+    <div class="method-card" id="m3" data-cat="定價" data-title="存續期間與凸性分析 Duration Convexity">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">03</div>
+        <div class="card-header-text">
+          <h3>存續期間與凸性分析 (Duration & Convexity)</h3>
+          <div class="tags">
+            <span class="tag">定價</span>
+            <span class="tag">風險管理</span>
+            <span class="tag">免疫策略</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>核心公式</h4>
+        <div class="formula">Macaulay Duration：D_Mac = Σ [t × CF_t/(1+y)^t] / P</div>
+        <div class="formula">Modified Duration：D_Mod = D_Mac / (1+y)，ΔP ≈ -D_Mod × P × Δy</div>
+        <div class="formula">凸性修正：ΔP/P ≈ -D_Mod × Δy + (1/2) × C × (Δy)²</div>
+
+        <h4>免疫策略 (Immunization)</h4>
+        <div class="cite">
+          <span class="cite-title">Redington (1952)</span> — <span class="cite-journal">Review of the Institute of Actuaries</span><br/>
+          <strong>免疫條件：</strong>① 資產 Duration = 負債 Duration，② 資產 Convexity ≥ 負債 Convexity
+        </div>
+        <p>現代應用：BlackRock、PIMCO 等資產管理公司的 LDI（Liability-Driven Investment）策略。</p>
+
+        <h4>實際案例</h4>
+        <div class="box box-red">
+          <strong>2022 年英國退休基金危機：</strong>英國 LDI 基金大量持有長期公債作為抵押品，當殖利率急升 100bps+，凸性效應導致抵押品價值急跌，觸發追繳保證金連鎖反應。英格蘭銀行緊急干預購買長期公債，為教科書級別的 Duration risk 案例。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 4 -->
+    <div class="method-card" id="m4" data-cat="定價" data-title="無套利定價模型 No-Arbitrage Pricing Bootstrap">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">04</div>
+        <div class="card-header-text">
+          <h3>無套利定價模型 (No-Arbitrage Pricing)</h3>
+          <div class="tags">
+            <span class="tag">定價</span>
+            <span class="tag">Bootstrap</span>
+            <span class="tag">零息曲線</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>理論基礎</h4>
+        <p>任何附息公債均可拆解為一組零息債券（STRIP）的投資組合，在無摩擦市場中兩者價格必須相等，否則存在套利機會。</p>
+        <div class="formula">P = Σ CF_t × d(0,t)，其中 d(0,t) 為 t 期折現因子</div>
+
+        <h4>Bootstrap 法建構零息殖利率曲線</h4>
+        <pre>已知（2023 年底美國公債資料）：
+  6M 公債殖利率 = 5.40%
+  1Y 公債殖利率 = 5.20%
+  2Y 附息公債（票息 4.5%）殖利率 = 4.70%
+
+Bootstrap 步驟：
+  1. d(0, 0.5) = 1 / (1 + 0.054/2) = 0.9737
+  2. d(0, 1.0) = 1 / (1 + 0.052)   = 0.9506
+  3. 2Y 公債：45×d(0.5) + 45×d(1.0) + 1045×d(0,2) = 1000/(1+0.047)²
+     → 解出 d(0,2) = 0.9120
+  4. 2Y 零息殖利率 = (1/0.9120)^(1/2) - 1 = 4.72%</pre>
+
+        <h4>關鍵文獻</h4>
+        <div class="cite">
+          <span class="cite-title">Gürkaynak, Sack & Wright (2007)</span><br/>
+          "The U.S. Treasury Yield Curve: 1961 to the Present"<br/>
+          <span class="cite-journal">Journal of Monetary Economics</span><br/>
+          建構美國國庫券完整歷史零息殖利率曲線資料庫，為後續無數研究的基礎資料集。
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ PART 2 ════════════════ -->
+    <div class="section-header" id="part2">
+      <div class="section-icon">📊</div>
+      <div><h2>第二部分：利率模型</h2></div>
+    </div>
+
+    <!-- METHOD 5 -->
+    <div class="method-card" id="m5" data-cat="利率模型" data-title="單因子短期利率模型 Vasicek CIR">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">05</div>
+        <div class="card-header-text">
+          <h3>單因子短期利率模型（Vasicek / CIR）</h3>
+          <div class="tags">
+            <span class="tag">利率模型</span>
+            <span class="tag">隨機過程</span>
+            <span class="tag">均值回歸</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>Vasicek Model (1977)</h4>
+        <div class="formula">dr_t = κ(θ − r_t)dt + σ dW_t</div>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>參數</th><th>意義</th></tr>
+            <tr><td>κ</td><td>均值回歸速度</td></tr>
+            <tr><td>θ</td><td>長期均衡利率</td></tr>
+            <tr><td>σ</td><td>利率波動率</td></tr>
+            <tr><td>W_t</td><td>標準 Wiener 過程</td></tr>
+          </table>
+        </div>
+        <div class="formula">零息公債封閉解：P(t,T) = A(t,T) × exp(−B(t,T) × r_t)</div>
+        <div class="box box-warn"><strong>缺點：</strong>利率可能為負（低利率環境下反而符合現實）</div>
+        <div class="cite">
+          <span class="cite-title">Vasicek (1977)</span> — "An Equilibrium Characterization of the Term Structure" — <span class="cite-journal">Journal of Financial Economics</span>
+        </div>
+
+        <h4>CIR Model (1985)</h4>
+        <div class="formula">dr_t = κ(θ − r_t)dt + σ√r_t dW_t</div>
+        <p>Feller 條件 <code>2κθ &gt; σ²</code> 確保利率恆為正值，避免 Vasicek 的負利率問題。</p>
+        <div class="cite">
+          <span class="cite-title">Cox, Ingersoll & Ross (1985)</span> — "A Theory of the Term Structure of Interest Rates" — <span class="cite-journal">Econometrica</span>
+        </div>
+
+        <h4>參數估計方法</h4>
+        <pre>from scipy.optimize import minimize
+import numpy as np
+
+def cir_log_likelihood(params, rates, dt):
+    kappa, theta, sigma = params
+    n = len(rates) - 1
+    ll = 0
+    for i in range(n):
+        # CIR 轉移密度為非中心卡方分配
+        c = 2*kappa / (sigma**2 * (1 - np.exp(-kappa*dt)))
+        u = c * rates[i] * np.exp(-kappa*dt)
+        v = c * rates[i+1]
+        q = 2*kappa*theta/sigma**2 - 1
+        ll += log_ncx2_pdf(2*v, 2*q+2, 2*u)
+    return -ll</pre>
+      </div>
+    </div>
+
+    <!-- METHOD 6 -->
+    <div class="method-card" id="m6" data-cat="利率模型" data-title="多因子利率模型 Nelson-Siegel Svensson Diebold Li">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">06</div>
+        <div class="card-header-text">
+          <h3>多因子利率模型（Nelson-Siegel / Svensson）</h3>
+          <div class="tags">
+            <span class="tag">利率模型</span>
+            <span class="tag">曲線擬合</span>
+            <span class="tag">ECB 標準</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>Nelson-Siegel Model (1987)</h4>
+        <div class="formula">y(τ) = β₀ + β₁·(1−e^(−λτ))/(λτ) + β₂·[(1−e^(−λτ))/(λτ) − e^(−λτ)]</div>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>因子</th><th>參數</th><th>影響</th><th>曲線特徵</th></tr>
+            <tr><td>Level（水準）</td><td>β₀</td><td>所有期限同向移動</td><td>平行位移</td></tr>
+            <tr><td>Slope（斜率）</td><td>β₁</td><td>短長端利差</td><td>曲線傾斜</td></tr>
+            <tr><td>Curvature（曲率）</td><td>β₂</td><td>中段隆起/凹陷</td><td>蝴蝶形變化</td></tr>
+          </table>
+        </div>
+
+        <h4>Svensson Model (1994)</h4>
+        <p>擴充加入第二個曲率因子（β₃, λ₂），提升中段擬合精度。歐洲央行（ECB）、德國央行、台灣央行均使用此模型公布標準殖利率曲線。</p>
+
+        <h4>動態 Nelson-Siegel（Diebold & Li 2006）</h4>
+        <div class="cite">
+          <span class="cite-title">Diebold & Li (2006)</span><br/>
+          "Forecasting the Term Structure of Government Bond Yields"<br/>
+          <span class="cite-journal">Journal of Econometrics</span><br/>
+          固定 λ，將 Nelson-Siegel 轉為狀態空間模型，以 Kalman Filter 動態估計，大幅提升預測精度。
+        </div>
+
+        <div class="box box-green">
+          <strong>實用資源：</strong>ECB 每個交易日公布歐元區 AAA 公債的 Svensson 參數 (β₀, β₁, β₂, β₃, λ₁, λ₂)，可直接重建任意期限殖利率。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 7 -->
+    <div class="method-card" id="m7" data-cat="利率模型" data-title="Heath-Jarrow-Morton HJM 框架 遠期利率">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">07</div>
+        <div class="card-header-text">
+          <h3>Heath-Jarrow-Morton (HJM) 框架</h3>
+          <div class="tags">
+            <span class="tag">利率模型</span>
+            <span class="tag">遠期利率</span>
+            <span class="tag">衍生品定價</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>理論架構</h4>
+        <p>HJM 對<strong>整條遠期利率曲線</strong>的隨機演化建模，是利率模型的一般性框架。</p>
+        <div class="formula">df(t,T) = μ(t,T)dt + σ(t,T)dW_t</div>
+
+        <h4>無套利漂移限制（HJM Drift Condition）</h4>
+        <div class="formula">μ(t,T) = σ(t,T) × ∫[t→T] σ(t,s)ds</div>
+        <p>此條件確保模型在風險中性測度下無套利，是 HJM 框架最核心的貢獻。</p>
+
+        <div class="cite">
+          <span class="cite-title">Heath, Jarrow & Morton (1992)</span><br/>
+          "Bond Pricing and the Term Structure of Interest Rates: A New Methodology for Contingent Claims Valuation"<br/>
+          <span class="cite-journal">Econometrica</span>
+        </div>
+
+        <h4>特殊案例</h4>
+        <div class="box box-info">
+          當指定特定的 σ(t,T) 函數形式時，HJM 可退化為 Vasicek 或 CIR 模型，顯示 HJM 是更一般性的框架。
+        </div>
+
+        <h4>應用：利率衍生品定價</h4>
+        <ul>
+          <li>利率交換 (Interest Rate Swap) 定價</li>
+          <li>利率上限/下限 (Cap/Floor) 定價</li>
+          <li>百慕達選擇權：需用 Monte Carlo + Longstaff-Schwartz 演算法</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- METHOD 8 -->
+    <div class="method-card" id="m8" data-cat="利率模型" data-title="仿射期限結構模型 ATSM AFNS Kalman Filter">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">08</div>
+        <div class="card-header-text">
+          <h3>仿射期限結構模型 (ATSM / AFNS)</h3>
+          <div class="tags">
+            <span class="tag">利率模型</span>
+            <span class="tag">Kalman Filter</span>
+            <span class="tag">無套利</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>核心概念</h4>
+        <p>仿射模型假設殖利率是狀態變數 X_t 的線性（仿射）函數：</p>
+        <div class="formula">y(t,τ) = A(τ) + B(τ)' X_t</div>
+        <div class="formula">狀態動態：dX_t = K(Θ − X_t)dt + Σ√S_t dW_t</div>
+
+        <div class="cite">
+          <span class="cite-title">Duffie & Kan (1996)</span> — "A Yield-Factor Model of Interest Rates" — <span class="cite-journal">Mathematical Finance</span>
+        </div>
+
+        <h4>AFNS 模型（仿射無套利 Nelson-Siegel）</h4>
+        <div class="cite">
+          <span class="cite-title">Christensen, Diebold & Rudebusch (2011)</span><br/>
+          "The Affine Arbitrage-Free Class of Nelson-Siegel Term Structure Models"<br/>
+          <span class="cite-journal">Journal of Econometrics</span><br/>
+          將 Nelson-Siegel 三因子嵌入仿射無套利框架，兼具直覺解釋性與理論嚴謹性。
+        </div>
+
+        <h4>估計方法</h4>
+        <pre>觀測方程：y(t,τ) = A(τ) + B(τ)' X_t + ε_t
+狀態方程：X_{t+1} = μ + Φ X_t + Σ η_t
+
+估計：Kalman Filter（線性高斯情形）
+     Extended KF / Particle Filter（非線性情形）</pre>
+
+        <div class="box box-green">
+          <strong>政策應用：</strong>美聯儲舊金山分行定期使用 AFNS 模型公布利率期限溢酬估計，為政策研究標準工具之一。
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ PART 3 ════════════════ -->
+    <div class="section-header" id="part3">
+      <div class="section-icon">⚠️</div>
+      <div><h2>第三部分：風險分析</h2></div>
+    </div>
+
+    <!-- METHOD 9 -->
+    <div class="method-card" id="m9" data-cat="風險" data-title="信用風險分析 CDS 主權評等 違約概率">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">09</div>
+        <div class="card-header-text">
+          <h3>信用風險分析（主權評等 / CDS）</h3>
+          <div class="tags">
+            <span class="tag">風險</span>
+            <span class="tag">CDS</span>
+            <span class="tag">主權信用</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>三大評等機構方法論</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>機構</th><th>核心評估因子</th></tr>
+            <tr><td>Moody's</td><td>經濟實力、機構實力、財政實力、易受衝擊程度</td></tr>
+            <tr><td>S&P</td><td>GDP per capita、GDP 成長、財政彈性、外部融資需求、貨幣彈性</td></tr>
+            <tr><td>Fitch</td><td>結構性因素、宏觀、財政、外部、金融</td></tr>
+          </table>
+        </div>
+
+        <h4>CDS 利差的信用資訊提取</h4>
+        <div class="formula">違約概率（年化）≈ CDS Spread / (1 − 回收率)</div>
+        <div class="box box-info">
+          <strong>實例：</strong>假設回收率 40%，若台灣 5Y CDS = 30bps，隱含年化違約概率 ≈ 0.5%
+        </div>
+
+        <div class="cite">
+          <span class="cite-title">Longstaff, Pan, Pedersen & Singleton (2011)</span><br/>
+          "How Sovereign is Sovereign Credit Risk?"<br/>
+          <span class="cite-journal">American Economic Journal: Macroeconomics</span><br/>
+          分析 26 國 CDS 資料，64% 的主權信用風險可由全球風險因子解釋。
+        </div>
+
+        <h4>利差分解</h4>
+        <div class="formula">公債殖利率 = 無風險利率 + 信用溢酬 + 流動性溢酬 + 稅務因子</div>
+        <div class="box box-red">
+          <strong>歐債危機案例（2011-2012）：</strong>希臘 10Y 利差 vs 德國最高達 3500bps。Attinasi, Checherita & Nickel (2009) ECB Working Paper 分解顯示：財政惡化 ~40%，流動性風險 ~30%，傳染效應 ~30%。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 10 -->
+    <div class="method-card" id="m10" data-cat="風險" data-title="利率風險管理 DV01 壓力測試 Key Rate Duration">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">10</div>
+        <div class="card-header-text">
+          <h3>利率風險管理（DV01 / 壓力測試）</h3>
+          <div class="tags">
+            <span class="tag">風險</span>
+            <span class="tag">DV01</span>
+            <span class="tag">壓力測試</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>DV01（每基點美元價值）</h4>
+        <div class="formula">DV01 = D_Mod × P × 0.0001</div>
+        <div class="box box-info">
+          <strong>實例：</strong>持有面額 1 億美元、D_Mod = 8 的 10Y 公債<br/>
+          DV01 = 8 × $100M × 0.0001 = $80,000<br/>
+          殖利率每升 1bp，部位損失 8 萬美元
+        </div>
+
+        <h4>BIS BCBS IRRBB 壓力測試情境（2016）</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>情境</th><th>描述</th></tr>
+            <tr><td>平行上移</td><td>所有期限同升 +200bps</td></tr>
+            <tr><td>平行下移</td><td>所有期限同降 -200bps</td></tr>
+            <tr><td>陡峭化</td><td>短升長不變</td></tr>
+            <tr><td>平坦化</td><td>短不變長降</td></tr>
+            <tr><td>短端上移</td><td>短端大幅上升</td></tr>
+            <tr><td>短端下移</td><td>短端大幅下降</td></tr>
+          </table>
+        </div>
+
+        <h4>Key Rate Duration（KRD）</h4>
+        <div class="formula">ΔP ≈ Σ KRD_k × Δy_k</div>
+        <p>拆解不同期限節點的利率敏感度，用於精確對沖複雜部位。</p>
+      </div>
+    </div>
+
+    <!-- METHOD 11 -->
+    <div class="method-card" id="m11" data-cat="風險" data-title="通膨風險 實質利率 TIPS Fisher BEI">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">11</div>
+        <div class="card-header-text">
+          <h3>通膨風險與實質利率分析（TIPS / BEI）</h3>
+          <div class="tags">
+            <span class="tag">風險</span>
+            <span class="tag">通膨</span>
+            <span class="tag">TIPS</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>Fisher 方程式</h4>
+        <div class="formula">(1 + R_nom) = (1 + R_real)(1 + πᵉ)</div>
+        <div class="formula">近似：R_nom ≈ R_real + πᵉ + 通膨風險溢酬</div>
+
+        <h4>盈虧平衡通膨率（BEI）</h4>
+        <div class="formula">BEI = 名目公債殖利率 − TIPS 殖利率</div>
+        <div class="cite">
+          <span class="cite-title">Gürkaynak, Sack & Wright (2010)</span><br/>
+          "The TIPS Yield Curve and Inflation Compensation"<br/>
+          <span class="cite-journal">American Economic Journal: Macroeconomics</span><br/>
+          分解 BEI = 通膨預期 + 通膨風險溢酬，通膨風險溢酬在金融海嘯後大幅下降。
+        </div>
+
+        <h4>2021–2022 通膨衝擊案例</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>時間點</th><th>10Y BEI</th><th>聯準會政策</th></tr>
+            <tr><td>2021 Q1</td><td>2.3%</td><td>認為通膨暫時</td></tr>
+            <tr><td>2021 Q4</td><td>2.7%</td><td>開始轉鷹</td></tr>
+            <tr><td>2022 Q2</td><td>3.0%+</td><td>激進升息</td></tr>
+          </table>
+        </div>
+        <p>BEI 的快速上升是聯準會政策轉向的重要先行指標。</p>
+      </div>
+    </div>
+
+    <!-- METHOD 12 -->
+    <div class="method-card" id="m12" data-cat="風險" data-title="流動性風險分析 Amihud On-the-run Repo">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">12</div>
+        <div class="card-header-text">
+          <h3>流動性風險分析</h3>
+          <div class="tags">
+            <span class="tag">風險</span>
+            <span class="tag">流動性</span>
+            <span class="tag">買賣價差</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>流動性衡量指標</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>指標</th><th>公式/定義</th><th>意義</th></tr>
+            <tr><td>買賣價差</td><td>Ask Price − Bid Price</td><td>直接交易成本</td></tr>
+            <tr><td>Amihud 非流動性比率</td><td>|r_t| / Volume_t</td><td>價格衝擊程度</td></tr>
+            <tr><td>Turnover Ratio</td><td>成交量 / 未償餘額</td><td>換手活躍度</td></tr>
+            <tr><td>Repo Rate Spread</td><td>Repo 利率 − 政策利率</td><td>抵押融資成本</td></tr>
+          </table>
+        </div>
+
+        <h4>On-the-run vs Off-the-run 溢酬</h4>
+        <p>On-the-run（最新發行）殖利率通常比 Off-the-run 同期限公債低 2–10bps，差額即流動性溢酬。</p>
+        <div class="cite">
+          <span class="cite-title">Krishnamurthy (2002)</span><br/>
+          "The Bond/Old-Bond Spread"<br/>
+          <span class="cite-journal">Journal of Financial Economics</span><br/>
+          此利差在 LTCM 危機（1998）與金融海嘯（2008）期間大幅擴大，是流動性危機的敏感指標。
+        </div>
+
+        <div class="box box-red">
+          <strong>2020 年 Covid 衝擊：</strong>美國公債市場一度失靈（Treasury market dysfunction），Fed 啟動 SRF（Standing Repo Facility），以公債作抵押提供隔夜流動性，穩定市場。
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ PART 4 ════════════════ -->
+    <div class="section-header" id="part4">
+      <div class="section-icon">🏛️</div>
+      <div><h2>第四部分：總體經濟與政策分析</h2></div>
+    </div>
+
+    <!-- METHOD 13 -->
+    <div class="method-card" id="m13" data-cat="政策" data-title="財政政策 公債永續性分析 DSA IMF 債務GDP">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">13</div>
+        <div class="card-header-text">
+          <h3>財政政策與公債永續性分析（DSA）</h3>
+          <div class="tags">
+            <span class="tag">政策</span>
+            <span class="tag">財政</span>
+            <span class="tag">IMF DSA</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>債務動態方程式</h4>
+        <div class="formula">d_t = [(1 + r_t) / (1 + g_t)] × d_{t-1} − s_t</div>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>符號</th><th>意義</th></tr>
+            <tr><td>d_t</td><td>債務/GDP 比率</td></tr>
+            <tr><td>r_t</td><td>實質利率</td></tr>
+            <tr><td>g_t</td><td>實質 GDP 成長率</td></tr>
+            <tr><td>s_t</td><td>基本財政餘額/GDP（收入 − 非利息支出）</td></tr>
+          </table>
+        </div>
+        <div class="box box-warn">
+          <strong>永續條件：</strong>若 r &gt; g，需正的基本財政盈餘才能穩定債務比率；若 r &lt; g，即使赤字仍可穩定。
+        </div>
+
+        <h4>IMF DSA 框架步驟</h4>
+        <div class="steps">
+          <div class="step"><div>建立基準情境（baseline）的未來5年債務路徑</div></div>
+          <div class="step"><div>情境分析：GDP 下降1標準差、利率+200bps、匯率貶值30%</div></div>
+          <div class="step"><div>設定扇形圖（fan chart）呈現不確定性範圍</div></div>
+          <div class="step"><div>以「燈號」系統標示風險等級（綠/黃/紅）</div></div>
+        </div>
+
+        <h4>日本債務永續性爭議</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>指標</th><th>數值（2023）</th></tr>
+            <tr><td>政府債務/GDP</td><td>~260%</td></tr>
+            <tr><td>10Y 公債殖利率</td><td>~0.7%（YCC 期間）</td></tr>
+            <tr><td>實質 GDP 成長</td><td>~1.5%</td></tr>
+            <tr><td>基本財政赤字/GDP</td><td>~2%</td></tr>
+          </table>
+        </div>
+        <div class="cite">
+          <span class="cite-title">Blanchard (2019)</span> — "Public Debt and Low Interest Rates" — <span class="cite-journal">American Economic Review</span><br/>
+          當 r &lt; g 時債務可持續，但利率正常化後壓力將浮現。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 14 -->
+    <div class="method-card" id="m14" data-cat="政策" data-title="貨幣政策傳導機制 QE 量化寬鬆 事件研究 期限溢酬">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">14</div>
+        <div class="card-header-text">
+          <h3>貨幣政策傳導機制研究（QE 效果分析）</h3>
+          <div class="tags">
+            <span class="tag">政策</span>
+            <span class="tag">QE</span>
+            <span class="tag">央行</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>QE 四大傳導管道（Bernanke 2010）</h4>
+        <div class="steps">
+          <div class="step"><div><strong>投資組合平衡效果：</strong>Fed 購買公債 → 投資人轉向股票/企業債，壓低風險溢酬</div></div>
+          <div class="step"><div><strong>信號效果：</strong>承諾維持低利率的可信度提升，拉低長端預期路徑</div></div>
+          <div class="step"><div><strong>流動性效果：</strong>市場功能改善，流動性溢酬下降</div></div>
+          <div class="step"><div><strong>持有量效果（Preferred Habitat）：</strong>供給減少，均衡價格上升，殖利率下降</div></div>
+        </div>
+
+        <h4>QE1 實證研究</h4>
+        <div class="cite">
+          <span class="cite-title">Gagnon, Raskin, Remache & Sack (2011)</span><br/>
+          "The Financial Market Effects of the Federal Reserve's Large-Scale Asset Purchases"<br/>
+          <span class="cite-journal">International Journal of Central Banking</span><br/>
+          研究 QE1（2008-2009）8 個宣告日，10Y 公債殖利率累積下降 <strong>91bps</strong>，其中期限溢酬下降 <strong>52bps</strong>。方法：事件窗口 ±1 天。
+        </div>
+
+        <h4>台灣案例</h4>
+        <div class="box box-info">
+          彭淑貞等（2019）台灣央行季刊研究顯示，台灣 10Y 殖利率對政策利率調整的傳導彈性約為 0.6–0.8，低於美國的 0.9–1.0，反映台灣貨幣政策的相對獨立性。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 15 -->
+    <div class="method-card" id="m15" data-cat="政策" data-title="總體因子模型 Macro-Finance Ang Piazzesi Kalman Filter">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">15</div>
+        <div class="card-header-text">
+          <h3>總體因子模型 (Macro-Finance Models)</h3>
+          <div class="tags">
+            <span class="tag">政策</span>
+            <span class="tag">總體</span>
+            <span class="tag">狀態空間</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>理論架構</h4>
+        <p>將巨觀經濟變數（通膨、產出缺口、貨幣政策）直接整合進利率期限結構模型，連接金融市場與實體經濟。</p>
+
+        <div class="cite">
+          <span class="cite-title">Kim & Wright (2005)</span> — FRB Working Paper<br/>
+          "An Arbitrage-Free Three-Factor Term Structure Model and the Recent Behavior of Long-Term Yields"<br/>
+          狀態變數包含：短期利率水準、通膨因子、實體經濟因子（產出缺口）
+        </div>
+
+        <div class="cite">
+          <span class="cite-title">Ang & Piazzesi (2003)</span><br/>
+          "A No-Arbitrage Vector Autoregression of Term Structure Dynamics with Macroeconomic and Latent Variables"<br/>
+          <span class="cite-journal">Journal of Monetary Economics</span><br/>
+          <strong>關鍵發現：</strong>通膨與實體活動因子解釋殖利率曲線變異的 85%。
+        </div>
+
+        <h4>狀態空間估計框架</h4>
+        <pre>觀測方程：y(t,τ) = A(τ) + B(τ)' X_t + ε_t
+狀態方程：X_{t+1} = μ + Φ X_t + Σ η_t
+
+狀態變數 X_t = [通膨(t), 產出缺口(t), 聯邦基金利率(t), 潛在因子1(t), 潛在因子2(t)]'
+
+估計方法：Kalman Filter（線性高斯情形）
+          Extended KF / Particle Filter（非線性情形）</pre>
+      </div>
+    </div>
+
+    <!-- ════════════════ PART 5 ════════════════ -->
+    <div class="section-header" id="part5">
+      <div class="section-icon">📉</div>
+      <div><h2>第五部分：計量與實證方法</h2></div>
+    </div>
+
+    <!-- METHOD 16 -->
+    <div class="method-card" id="m16" data-cat="計量" data-title="向量自我迴歸 VAR SVAR 脈衝反應 Cholesky">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">16</div>
+        <div class="card-header-text">
+          <h3>向量自我迴歸 (VAR / SVAR)</h3>
+          <div class="tags">
+            <span class="tag">計量</span>
+            <span class="tag">VAR</span>
+            <span class="tag">脈衝反應</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>標準 VAR 設定</h4>
+        <div class="formula">Y_t = c + A₁Y_{t-1} + A₂Y_{t-2} + ··· + AₚY_{t-p} + u_t</div>
+        <p>典型公債研究的變數組合：</p>
+        <div class="formula">Y_t = [FFR_t, CPI_t, IP_t, 10Y Yield_t, Term Spread_t]'</div>
+
+        <h4>結構識別：Cholesky 分解（Sims 1980）</h4>
+        <p>依「由慢到快」排序：實體變數（最不敏感）→ 貨幣政策工具（FFR）→ 金融市場變數（公債殖利率，最敏感）</p>
+
+        <h4>脈衝反應函數解讀</h4>
+        <div class="cite">
+          <span class="cite-title">Bernanke & Blinder (1992)</span><br/>
+          "The Federal Funds Rate and the Channels of Monetary Transmission"<br/>
+          <span class="cite-journal">American Economic Review</span><br/>
+          緊縮性貨幣政策衝擊後，短端殖利率立即上升；實體產出在 6–18 個月後下降。
+        </div>
+
+        <h4>台灣實證研究</h4>
+        <div class="box box-info">
+          吳中書等（台灣央行季刊，2018）使用 VAR 分析台灣貨幣政策傳導，發現台灣長短端利差對景氣循環的預測力在 2000 年後有所減弱，與全球「低中性利率」趨勢一致。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 17 -->
+    <div class="method-card" id="m17" data-cat="計量" data-title="共整合 誤差修正模型 VECM Johansen Engle-Granger">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">17</div>
+        <div class="card-header-text">
+          <h3>共整合與誤差修正模型 (VECM)</h3>
+          <div class="tags">
+            <span class="tag">計量</span>
+            <span class="tag">共整合</span>
+            <span class="tag">VECM</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>共整合概念</h4>
+        <p>若兩個非定態序列 y₁t 與 y₂t 的某線性組合為定態，則稱兩者共整合。公債應用：不同期限殖利率之間的長期均衡關係。</p>
+
+        <h4>Engle-Granger 兩步驟法</h4>
+        <pre>步驟 1：估計長期均衡關係
+  y_{2t} = α + β y_{10t} + ε_t（OLS）
+  ADF 檢定 ε_t 是否為定態
+
+步驟 2：建立誤差修正模型（ECM）
+  Δy_{2t} = γ(y_{2,t-1} - α̂ - β̂ y_{10,t-1})
+           + Σ δ_k Δy_{2,t-k}
+           + Σ φ_k Δy_{10,t-k} + u_t
+  γ < 0：負回饋係數，確認均值回歸機制</pre>
+
+        <div class="cite">
+          <span class="cite-title">Hall, Anderson & Granger (1992)</span><br/>
+          "A Cointegration Analysis of Treasury Bill Yields"<br/>
+          <span class="cite-journal">Review of Economics and Statistics</span><br/>
+          對美國 1Y、3Y、5Y、10Y 公債進行 Johansen 檢定，發現一個共整合向量。
+        </div>
+
+        <h4>歐元區公債利差的長期均衡</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>時期</th><th>共整合狀態</th><th>解讀</th></tr>
+            <tr><td>1999–2007</td><td>高度共整合</td><td>歐元區金融一體化</td></tr>
+            <tr><td>2010–2012</td><td>共整合崩潰</td><td>歐債危機，市場分裂</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 18 -->
+    <div class="method-card" id="m18" data-cat="計量" data-title="事件研究法 Event Study 異常報酬 CAR 貨幣政策">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">18</div>
+        <div class="card-header-text">
+          <h3>事件研究法 (Event Study)</h3>
+          <div class="tags">
+            <span class="tag">計量</span>
+            <span class="tag">事件研究</span>
+            <span class="tag">政策衝擊</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>標準方法論框架</h4>
+        <div class="cite">
+          <span class="cite-title">MacKinlay (1997)</span> — "Event Studies in Economics and Finance" — <span class="cite-journal">Journal of Economic Literature</span>
+        </div>
+
+        <div class="steps">
+          <div class="step"><div><strong>識別事件：</strong>央行利率決策日、財政預算公布、信評調整日、重大地緣政治事件</div></div>
+          <div class="step"><div><strong>估計正常報酬（估計窗口）：</strong>事件前 [-250, -11] 個交易日，使用市場模型或常數平均報酬</div></div>
+          <div class="step"><div><strong>計算異常報酬：</strong>AR_t = R_t − E[R_t | X_t]</div></div>
+          <div class="step"><div><strong>累積異常報酬：</strong>CAR(t1, t2) = Σ AR_t</div></div>
+          <div class="step"><div><strong>統計檢定：</strong>t = CAR / σ(CAR)，雙尾 5% 顯著水準</div></div>
+        </div>
+
+        <h4>高頻事件研究：貨幣政策驚喜</h4>
+        <div class="cite">
+          <span class="cite-title">Gürkaynak, Sack & Swanson (2005)</span><br/>
+          "The Sensitivity of Long-Term Interest Rates to Economic News"<br/>
+          <span class="cite-journal">American Economic Review</span><br/>
+          使用政策公告前後 <strong>30 分鐘</strong> 資料，將 FOMC 決策分解為「當期目標」與「路徑驚喜」兩因子，長端對路徑驚喜的反應遠大於當期決策。
+        </div>
+
+        <h4>設計實例：台灣信評調整事件</h4>
+        <div class="box box-info">
+          事件日：S&P 調升台灣信評宣告日<br/>
+          研究窗口：[-1, +1] 交易日<br/>
+          正常報酬基準：美國同期限公債殖利率變動<br/>
+          預期結果：信評調升 → AR &gt; 0（殖利率下降、債券上漲）
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════ PART 6 ════════════════ -->
+    <div class="section-header" id="part6">
+      <div class="section-icon">🌐</div>
+      <div><h2>第六部分：進階與跨市場分析</h2></div>
+    </div>
+
+    <!-- METHOD 19 -->
+    <div class="method-card" id="m19" data-cat="進階" data-title="相對價值分析 蝴蝶交易 騎乘殖利率曲線 Swap Spread Cochrane Piazzesi">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">19</div>
+        <div class="card-header-text">
+          <h3>跨市場相對價值分析（蝴蝶交易 / Swap Spread）</h3>
+          <div class="tags">
+            <span class="tag">進階</span>
+            <span class="tag">交易策略</span>
+            <span class="tag">套利</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>蝴蝶交易 (Butterfly Trade)</h4>
+        <div class="formula">Butterfly Spread = 2 × y₅Y − y₂Y − y₁₀Y</div>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>方向</th><th>做法</th><th>預期</th></tr>
+            <tr><td>做空蝴蝶（正蝴蝶）</td><td>空 5Y，多 2Y+10Y</td><td>曲線中段相對走高（變凸）</td></tr>
+            <tr><td>做多蝴蝶（負蝴蝶）</td><td>多 5Y，空 2Y+10Y</td><td>曲線中段相對走低（變凹）</td></tr>
+          </table>
+        </div>
+        <div class="formula">Duration 中性：Notional₅Y = (DV01₂Y + DV01₁₀Y) / DV01₅Y</div>
+
+        <h4>騎乘殖利率曲線 (Riding the Yield Curve)</h4>
+        <p>在正斜率曲線中，購買期限稍長的公債，持有後因「滑動」至較低殖利率區間，獲取資本利得。</p>
+        <div class="box box-info">
+          <strong>實例：</strong>若 3Y 殖利率 = 4.5%，2Y 殖利率 = 4.0%，購買 3Y 持有 1 年後以 2Y 殖利率出售（假設曲線不變），可額外獲得 ~50bps 資本利得報酬。
+        </div>
+        <div class="cite">
+          <span class="cite-title">Cochrane & Piazzesi (2005)</span><br/>
+          "Bond Risk Premia"<br/>
+          <span class="cite-journal">American Economic Review</span><br/>
+          提出 CP 因子可預測未來 1 年各期限公債超額報酬，預測 R² 達 35%。
+        </div>
+
+        <h4>Swap Spread 分析</h4>
+        <div class="formula">Swap Spread = IRS 利率 − 同期限公債殖利率</div>
+        <div class="box box-warn">
+          <strong>2015–2016 美國 30Y Swap Spread 負值異象：</strong>打破傳統 Swap Spread 恆正認知，被解讀為監管資本限制導致套利機制受阻（Jermann 2020, Journal of Finance）。
+        </div>
+      </div>
+    </div>
+
+    <!-- METHOD 20 -->
+    <div class="method-card" id="m20" data-cat="進階" data-title="投資人結構 行為金融 外資持債 安全資產 羊群效應">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num">20</div>
+        <div class="card-header-text">
+          <h3>投資人結構與行為金融研究</h3>
+          <div class="tags">
+            <span class="tag">進階</span>
+            <span class="tag">行為金融</span>
+            <span class="tag">安全資產</span>
+          </div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body">
+        <h4>投資人結構分析（美國 2023）</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>持有人</th><th>比例</th><th>行為特徵</th></tr>
+            <tr><td>聯準會</td><td>~19%</td><td>QE/QT 政策工具</td></tr>
+            <tr><td>外國政府/央行</td><td>~24%</td><td>外匯儲備管理，相對不敏感</td></tr>
+            <tr><td>貨幣基金/共同基金</td><td>~16%</td><td>流動性導向</td></tr>
+            <tr><td>商業銀行</td><td>~8%</td><td>法規驅動（LCR）</td></tr>
+            <tr><td>退休/保險基金</td><td>~10%</td><td>長期配置，不敏感</td></tr>
+          </table>
+        </div>
+
+        <h4>行為偏誤：過度外推與期限溢酬</h4>
+        <div class="cite">
+          <span class="cite-title">Cieslak & Povala (2015)</span><br/>
+          "Expected Returns in Treasury Bonds"<br/>
+          <span class="cite-journal">Review of Financial Studies</span><br/>
+          機構投資人對通膨趨勢存在過度外推偏誤，構建交易策略年化 Sharpe Ratio 達 1.2。
+        </div>
+
+        <h4>全球安全資產需求</h4>
+        <div class="cite">
+          <span class="cite-title">Caballero, Farhi & Gourinchas (2017)</span><br/>
+          "The Safe Assets Shortage Conundrum"<br/>
+          <span class="cite-journal">Journal of Economic Perspectives</span><br/>
+          「安全資產稀缺」解釋全球中性利率長期下降；地緣政治風險推動「安全資產多元化」趨勢。
+        </div>
+
+        <h4>羊群效應量化指標</h4>
+        <div class="cite">
+          <span class="cite-title">Bikhchandani & Sharma (2001)</span><br/>
+          "Herd Behavior in Financial Markets"<br/>
+          <span class="cite-journal">IMF Staff Papers</span>
+        </div>
+        <ul>
+          <li>信評下調後的過度拋售（非理性反應）</li>
+          <li>壓力時期機構同步移向短端（Flight to Safety）</li>
+          <li>量化指標：Lakonishok, Shleifer & Vishny (1992) HM 指標</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ════════════════ APPENDIX ════════════════ -->
+    <div class="section-header" id="appendix">
+      <div class="section-icon">📋</div>
+      <div><h2>附錄：方法選擇指南</h2></div>
+    </div>
+
+    <div class="method-card" id="guide" data-cat="all" data-title="方法選擇指南 研究目的 期刊資源">
+      <div class="card-header" onclick="toggleCard(this)">
+        <div class="method-num" style="background:#607080">📋</div>
+        <div class="card-header-text">
+          <h3>依研究目的選擇方法 ＆ 核心資源清單</h3>
+          <div class="tags"><span class="tag">指南</span><span class="tag">期刊</span><span class="tag">資料來源</span></div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="card-body open">
+        <h4>依研究目的選擇方法</h4>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>研究目的</th><th>建議方法</th></tr>
+            <tr><td>預測公債殖利率</td><td>方法 6（Nelson-Siegel）、方法 15（Macro-Finance）</td></tr>
+            <tr><td>利率風險管理</td><td>方法 3（Duration/Convexity）、方法 10（DV01/壓力測試）</td></tr>
+            <tr><td>貨幣政策效果評估</td><td>方法 14（QE 研究）、方法 18（事件研究）</td></tr>
+            <tr><td>財政可持續性</td><td>方法 13（DSA）、方法 17（VECM）</td></tr>
+            <tr><td>衍生品定價</td><td>方法 5（CIR）、方法 7（HJM）、方法 8（ATSM）</td></tr>
+            <tr><td>超額報酬預測</td><td>方法 19（相對價值）、方法 20（行為金融）</td></tr>
+            <tr><td>衰退預測</td><td>方法 1（殖利率曲線）、方法 16（VAR）</td></tr>
+            <tr><td>信用分析</td><td>方法 9（CDS/評等）、方法 17（VECM 利差）</td></tr>
+          </table>
+        </div>
+
+        <h4>核心學術期刊</h4>
+        <ul>
+          <li><em>Journal of Finance</em></li>
+          <li><em>Journal of Financial Economics</em></li>
+          <li><em>Review of Financial Studies</em></li>
+          <li><em>Journal of Monetary Economics</em></li>
+          <li><em>Econometrica</em></li>
+          <li><em>American Economic Review</em></li>
+          <li><em>Journal of Economic Literature</em></li>
+          <li><em>American Economic Journal: Macroeconomics</em></li>
+        </ul>
+
+        <h4>主要機構研究資源</h4>
+        <ul>
+          <li>美聯儲（FRB）FEDS Notes & Working Papers</li>
+          <li>紐約聯邦儲備銀行 — ACM 期限溢酬資料、AFNS 模型</li>
+          <li>國際清算銀行（BIS）Working Papers</li>
+          <li>IMF Working Papers & Staff Papers（DSA 方法論）</li>
+          <li>歐洲央行（ECB）Working Paper Series（Svensson 曲線資料）</li>
+          <li>台灣中央銀行季刊</li>
+        </ul>
+
+        <h4>主要資料來源</h4>
+        <ul>
+          <li>美國財政部 / Fed H.15 報表（殖利率日資料）</li>
+          <li>Bloomberg / Refinitiv（即時行情、CDS 資料）</li>
+          <li>FRED（聖路易聯儲資料庫，免費）</li>
+          <li>台灣財政部公債管理（公債持有結構）</li>
+          <li>台灣央行統計資料庫（國內殖利率曲線）</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div id="back-top" title="回到頂端">↑</div>
+
+<script>
+  /* ── DATA for overview grid ── */
+  const methods = [
+    {id:'m1',  num:'01', title:'殖利率曲線分析',      cat:'定價'},
+    {id:'m2',  num:'02', title:'期限結構理論',         cat:'定價'},
+    {id:'m3',  num:'03', title:'存續期間與凸性',       cat:'定價'},
+    {id:'m4',  num:'04', title:'無套利定價模型',       cat:'定價'},
+    {id:'m5',  num:'05', title:'單因子利率模型',       cat:'利率模型'},
+    {id:'m6',  num:'06', title:'Nelson-Siegel 模型',   cat:'利率模型'},
+    {id:'m7',  num:'07', title:'HJM 框架',             cat:'利率模型'},
+    {id:'m8',  num:'08', title:'仿射期限結構模型',     cat:'利率模型'},
+    {id:'m9',  num:'09', title:'信用風險分析',         cat:'風險'},
+    {id:'m10', num:'10', title:'利率風險管理',         cat:'風險'},
+    {id:'m11', num:'11', title:'通膨與實質利率',       cat:'風險'},
+    {id:'m12', num:'12', title:'流動性風險分析',       cat:'風險'},
+    {id:'m13', num:'13', title:'財政永續性分析',       cat:'政策'},
+    {id:'m14', num:'14', title:'貨幣政策傳導機制',     cat:'政策'},
+    {id:'m15', num:'15', title:'總體因子模型',         cat:'政策'},
+    {id:'m16', num:'16', title:'VAR / SVAR',           cat:'計量'},
+    {id:'m17', num:'17', title:'共整合 VECM',          cat:'計量'},
+    {id:'m18', num:'18', title:'事件研究法',           cat:'計量'},
+    {id:'m19', num:'19', title:'相對價值分析',         cat:'進階'},
+    {id:'m20', num:'20', title:'投資人結構與行為',     cat:'進階'},
+  ];
+
+  const catColors = {
+    '定價':'#1a5c8a','利率模型':'#2e7d52','風險':'#8b2e2e',
+    '政策':'#6a4a00','計量':'#4a2e8b','進階':'#5c1a5c'
+  };
+
+  const grid = document.getElementById('overview-grid');
+  methods.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'ov-card';
+    card.innerHTML = `
+      <div class="ov-num" style="color:${catColors[m.cat]||'var(--accent)'}">方法 ${m.num}</div>
+      <div class="ov-title">${m.title}</div>
+      <div class="ov-cat">${m.cat}</div>
+    `;
+    card.onclick = () => {
+      const el = document.getElementById(m.id);
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+      const header = el.querySelector('.card-header');
+      if (!header.classList.contains('open')) toggleCard(header);
+    };
+    grid.appendChild(card);
+  });
+
+  /* ── TOGGLE CARD ── */
+  function toggleCard(header) {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector('.chevron');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    chevron.classList.toggle('open', !isOpen);
+    header.classList.toggle('open', !isOpen);
+  }
+
+  /* ── FILTER BUTTONS ── */
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.dataset.cat;
+      document.querySelectorAll('.method-card').forEach(card => {
+        const cardCat = card.dataset.cat;
+        if (cat === 'all' || cardCat === cat) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+
+  /* ── SIDEBAR SEARCH ── */
+  document.getElementById('sidebar-search').addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+
+    // Also filter cards
+    document.querySelectorAll('.method-card').forEach(card => {
+      const title = (card.dataset.title || '').toLowerCase();
+      const body  = card.textContent.toLowerCase();
+      if (!q || title.includes(q) || body.includes(q)) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    // Reset filter buttons
+    if (q) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    } else {
+      document.querySelector('.filter-btn[data-cat="all"]').classList.add('active');
+      document.querySelectorAll('.method-card').forEach(c => c.classList.remove('hidden'));
+    }
+  });
+
+  /* ── ACTIVE NAV ITEM ON SCROLL ── */
+  const navItems = document.querySelectorAll('.nav-item');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = '#' + entry.target.id;
+        navItems.forEach(n => {
+          n.classList.toggle('active', n.getAttribute('href') === id);
+        });
+      }
+    });
+  }, {rootMargin: '-20% 0px -70% 0px'});
+
+  document.querySelectorAll('.method-card[id]').forEach(el => observer.observe(el));
+
+  /* ── BACK TO TOP ── */
+  const backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', () => {
+    backTop.classList.toggle('show', window.scrollY > 400);
+  });
+  backTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+  /* ── HAMBURGER (mobile) ── */
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('overlay');
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  });
+
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  });
+
+  /* ── SMOOTH NAV CLICK ── */
+  navItems.forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(item.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({behavior:'smooth', block:'start'});
+        // Auto-open card
+        const header = target.querySelector('.card-header');
+        if (header && !header.classList.contains('open')) toggleCard(header);
+      }
+      // Close mobile sidebar
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    });
+  });
+</script>
+</body>
+</html>
