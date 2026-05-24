@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>公債研究：以目的驅動的方法論指南</title>
+  <style>
+    :root {
+      --primary:   #0f2744;
+      --accent:    #c8860a;
+      --accent2:   #f5a623;
+      --bg:        #f5f4f0;
+      --card:      #ffffff;
+      --border:    #e0d8cc;
+      --text:      #1e2d3d;
+      --muted:     #7a6e60;
+      --sidebar-w: 290px;
+      --radius:    10px;
+      --green:     #1a6b40;
+      --green-bg:  #e8f5ee;
+      --red:       #a02020;
+      --red-bg:    #fdecea;
+      --blue:      #1a3a8a;
+      --blue-bg:   #e8eefb;
+      --gold-bg:   #fff8e8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans TC', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary);
+      color: #dde6f0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform .3s;
+    }
+
+    #sidebar-logo {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+
+    #sidebar-logo .logo-icon {
+      font-size: 1.6rem;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    #sidebar-logo h2 {
+      font-size: .95rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    #sidebar-logo p {
+      font-size: .72rem;
+      color: #9ab4cc;
+      margin-top: 3px;
+    }
+
+    #search-wrap {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    #search-wrap input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border-radius: 7px;
+      border: none;
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      font-size: .82rem;
+      outline: none;
+    }
+
+    #search-wrap input::placeholder { color: #8aaabf; }
+    #search-wrap input:focus { background: rgba(255,255,255,.18); }
+
+    .search-wrap-inner { position: relative; }
+
+    .search-icon-sb {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: #8aaabf;
+      font-size: .85rem;
+      pointer-events: none;
+    }
+
+    .nav-group-title {
+      font-size: .65rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #7a9ab8;
+      padding: 12px 18px 4px;
+    }
+
+    .nav-obj {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: .81rem;
+      color: #c4d8e8;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+      text-decoration: none;
+    }
+
+    .nav-obj:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .nav-obj.active { background: rgba(200,134,10,.25); color: #fff; border-left-color: var(--accent2); }
+
+    .nav-obj .obj-icon {
+      font-size: .95rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .nav-obj .obj-text { line-height: 1.35; }
+
+    /* ═══ MAIN ═══ */
+    #main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* HERO */
+    #hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #1a4a7a 100%);
+      color: #fff;
+      padding: 48px 40px 40px;
+    }
+
+    #hero .hero-tag {
+      display: inline-block;
+      background: rgba(200,134,10,.3);
+      border: 1px solid var(--accent2);
+      color: var(--accent2);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    #hero h1 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1.3;
+      max-width: 620px;
+    }
+
+    #hero p {
+      font-size: .92rem;
+      color: #a8c4dc;
+      margin-top: 10px;
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* OBJECTIVE GRID */
+    #obj-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 14px;
+      padding: 32px 36px 0;
+    }
+
+    .obj-chip {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 14px 12px;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .obj-chip::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .obj-chip:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+      transform: translateY(-2px);
+    }
+
+    .obj-chip .chip-icon { font-size: 1.3rem; }
+    .obj-chip .chip-title { font-size: .82rem; font-weight: 700; color: var(--primary); margin-top: 6px; line-height: 1.3; }
+    .obj-chip .chip-methods { font-size: .68rem; color: var(--muted); margin-top: 5px; }
+
+    /* TOPBAR */
+    #topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 36px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    #topbar .tb-title { font-size: 1rem; font-weight: 700; color: var(--primary); }
+
+    .filter-strip { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+    .fb {
+      padding: 4px 13px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-size: .75rem;
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 600;
+      transition: all .2s;
+    }
+
+    .fb:hover { border-color: var(--accent); color: var(--accent); }
+    .fb.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    #hamburger {
+      display: none;
+      width: 34px; height: 34px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    /* CONTENT */
+    #content { padding: 32px 36px; max-width: 1060px; }
+
+    /* OBJECTIVE BLOCK */
+    .obj-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 36px;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+
+    .obj-block:hover { box-shadow: 0 6px 28px rgba(0,0,0,.08); }
+
+    .obj-block-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 26px;
+      border-bottom: 2px solid var(--bg);
+      cursor: pointer;
+    }
+
+    .obj-num-badge {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .obj-block-header .hdr-right { flex: 1; }
+
+    .obj-block-header h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .obj-block-header .method-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .mpill {
+      font-size: .68rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 4px;
+      border: 1.5px solid;
+    }
+
+    .chevron-obj { font-size: .9rem; color: var(--muted); transition: transform .2s; }
+    .chevron-obj.open { transform: rotate(180deg); }
+
+    .obj-block-body { display: none; }
+    .obj-block-body.open { display: block; }
+
+    /* INNER SECTIONS */
+    .inner-section {
+      padding: 24px 26px;
+      border-bottom: 1px solid var(--bg);
+    }
+
+    .inner-section:last-child { border-bottom: none; }
+
+    .inner-title {
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inner-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* IMPORTANCE BOX */
+    .importance-box {
+      background: var(--gold-bg);
+      border: 1px solid #f0c060;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+
+    .importance-box .imp-lead {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #7a4a00;
+      line-height: 1.5;
+    }
+
+    .importance-box .imp-body {
+      font-size: .85rem;
+      color: #5a3800;
+      margin-top: 8px;
+      line-height: 1.7;
+    }
+
+    /* METHOD CONNECTION */
+    .method-connect {
+      background: var(--blue-bg);
+      border-left: 4px solid var(--blue);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+    }
+
+    .method-connect .mc-label {
+      font-size: .7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--blue);
+      margin-bottom: 5px;
+    }
+
+    .method-connect .mc-title {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .method-connect p {
+      font-size: .84rem;
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* INVESTOR GUIDE */
+    .investor-guide {
+      background: var(--green-bg);
+      border: 1px solid #9ad4b0;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .investor-guide .ig-title {
+      font-size: .78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+
+    .investor-guide ol {
+      padding-left: 18px;
+    }
+
+    .investor-guide li {
+      font-size: .85rem;
+      line-height: 1.75;
+      color: #1a3a28;
+      margin-bottom: 4px;
+    }
+
+    .investor-guide li strong { color: var(--green); }
+
+    /* CASE STUDY */
+    .case-block {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .case-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      background: var(--primary);
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .case-header .case-tag {
+      font-size: .65rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 1px 7px;
+      border-radius: 3px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .case-body {
+      padding: 14px 18px;
+      font-size: .84rem;
+      line-height: 1.75;
+      color: var(--text);
+    }
+
+    .case-body strong { color: var(--primary); font-weight: 700; }
+
+    /* DATA TABLE */
+    .tbl-wrap { overflow-x: auto; margin: 10px 0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th { background: var(--primary); color: #fff; padding: 9px 14px; text-align: left; font-weight: 600; white-space: nowrap; }
+    td { padding: 8px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: #f9f7f4; }
+    tr:hover td { background: #f0ece6; }
+
+    /* FORMULA */
+    .formula {
+      background: #f0f0f8;
+      border-left: 4px solid var(--blue);
+      border-radius: 0 8px 8px 0;
+      padding: 11px 16px;
+      margin: 8px 0;
+      font-family: 'Consolas', Georgia, serif;
+      font-size: .88rem;
+      color: var(--primary);
+      overflow-x: auto;
+    }
+
+    /* STEPS */
+    .step-list { counter-reset: stp; }
+
+    .step-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      counter-increment: stp;
+    }
+
+    .step-item::before {
+      content: counter(stp);
+      min-width: 24px; height: 24px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .72rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-item .step-body { font-size: .85rem; line-height: 1.7; color: var(--text); }
+    .step-item .step-body strong { color: var(--primary); }
+
+    /* CODE */
+    pre {
+      background: #1a2a3a;
+      color: #c8dde8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: .78rem;
+      line-height: 1.65;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-family: 'Consolas','Cascadia Code',monospace;
+    }
+
+    code {
+      background: #e8e4dc;
+      color: #3a2800;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: .8rem;
+      font-family: 'Consolas',monospace;
+    }
+
+    pre code { background: none; color: inherit; padding: 0; }
+
+    /* CITE */
+    .cite {
+      background: #f8f6f2;
+      border: 1px solid #e0d8cc;
+      border-radius: 8px;
+      padding: 11px 15px;
+      font-size: .81rem;
+      line-height: 1.65;
+      margin: 8px 0;
+    }
+
+    .cite .cite-title { font-weight: 700; color: var(--accent); }
+    .cite .cite-journal { font-style: italic; color: var(--muted); }
+
+    /* SIGNAL BOX */
+    .signal-box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: var(--red-bg);
+      border: 1px solid #f0b0b0;
+      border-radius: 9px;
+      padding: 13px 16px;
+      margin: 10px 0;
+      font-size: .84rem;
+      line-height: 1.65;
+      color: var(--red);
+    }
+
+    .signal-box.warn { background: #fff8e8; border-color: #f0c060; color: #7a4a00; }
+    .signal-box.ok { background: var(--green-bg); border-color: #9ad4b0; color: var(--green); }
+
+    /* BACK TOP */
+    #back-top {
+      position: fixed;
+      right: 22px; bottom: 22px;
+      width: 40px; height: 40px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25);
+      opacity: 0;
+      transition: opacity .3s;
+      z-index: 200;
+    }
+
+    #back-top.show { opacity: 1; }
+
+    /* OVERLAY */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 99;
+    }
+
+    #overlay.show { display: block; }
+
+    /* HIDDEN */
+    .obj-block.hidden { display: none; }
+
+    /* RESPONSIVE */
+    @media (max-width: 820px) {
+      :root { --sidebar-w: 0px; }
+      #sidebar { transform: translateX(-290px); width: 290px; }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; }
+      #content, #obj-grid { padding-left: 16px; padding-right: 16px; }
+      #hero { padding: 32px 20px 28px; }
+      #hero h1 { font-size: 1.3rem; }
+      #topbar { padding: 10px 16px; }
+      .filter-strip { display: none; }
+      #hamburger { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div id="sidebar-logo">
+    <span class="logo-icon">🎯</span>
+    <h2>以目的驅動的<br/>公債研究方法論</h2>
+    <p>8 大研究目的 × 最佳方法組合</p>
+  </div>
+
+  <div id="search-wrap">
+    <div class="search-wrap-inner">
+      <span class="search-icon-sb">🔍</span>
+      <input type="text" id="sb-search" placeholder="搜尋研究目的或關鍵字…" />
+    </div>
+  </div>
+
+  <div class="nav-group-title">研究目的導覽</div>
+  <a class="nav-obj" href="#obj1"><span class="obj-icon">📈</span><span class="obj-text">預測公債殖利率</span></a>
+  <a class="nav-obj" href="#obj2"><span class="obj-icon">🛡️</span><span class="obj-text">利率風險管理</span></a>
+  <a class="nav-obj" href="#obj3"><span class="obj-icon">🏦</span><span class="obj-text">貨幣政策效果評估</span></a>
+  <a class="nav-obj" href="#obj4"><span class="obj-icon">⚖️</span><span class="obj-text">財政可持續性</span></a>
+  <a class="nav-obj" href="#obj5"><span class="obj-icon">⚙️</span><span class="obj-text">衍生品定價</span></a>
+  <a class="nav-obj" href="#obj6"><span class="obj-icon">💰</span><span class="obj-text">超額報酬預測</span></a>
+  <a class="nav-obj" href="#obj7"><span class="obj-icon">🌩️</span><span class="obj-text">衰退預測</span></a>
+  <a class="nav-obj" href="#obj8"><span class="obj-icon">🔍</span><span class="obj-text">信用分析</span></a>
+</nav>
+
+<div id="overlay"></div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- HERO -->
+  <div id="hero">
+    <div class="hero-tag">REVERSE RESEARCH FRAMEWORK</div>
+    <h1>從研究目的出發，<br/>找到最佳分析方法</h1>
+    <p>傳統方法論手冊從工具出發；本指南反向操作——先釐清投資人「想解決什麼問題」，再推導出最適合的研究方法組合、學術依據與實戰步驟。</p>
+  </div>
+
+  <!-- OBJ GRID -->
+  <div id="obj-grid"></div>
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <button id="hamburger">☰</button>
+    <span class="tb-title">研究目的總覽</span>
+    <div class="filter-strip">
+      <button class="fb active" data-grp="all">全部</button>
+      <button class="fb" data-grp="market">市場分析</button>
+      <button class="fb" data-grp="risk">風險管理</button>
+      <button class="fb" data-grp="policy">政策研究</button>
+      <button class="fb" data-grp="return">報酬預測</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- ████ OBJ 1 ████ -->
+    <div class="obj-block" id="obj1" data-grp="market" data-title="預測公債殖利率 Nelson-Siegel Macro-Finance 殖利率曲線">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#e8f0fb;">📈</div>
+        <div class="hdr-right">
+          <h2>研究目的 1：預測公債殖利率</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#1a5c8a;border-color:#1a5c8a;background:#e8f0fb;">方法 6 Nelson-Siegel</span>
+            <span class="mpill" style="color:#1a5c8a;border-color:#1a5c8a;background:#e8f0fb;">方法 15 Macro-Finance</span>
+          </div>
+        </div>
+        <span class="chevron-obj open">▼</span>
+      </div>
+      <div class="obj-block-body open">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">殖利率是公債市場一切定價的核心，也是全球資產配置的「重力」。</div>
+            <div class="imp-body">
+              公債殖利率直接決定債券持有人的報酬，並透過折現率影響股票、不動產、企業債券的估值。中央銀行的政策利率、企業借貸成本、房貸利率，都以公債殖利率為錨點。對投資人而言，能夠提前預測殖利率走勢，便能在資產配置上領先市場——利率上升前縮短存續期間、利率下降前加長部位，都是基本操作。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 6 ──</div>
+            <div class="mc-title">Nelson-Siegel 模型：捕捉曲線形狀的三因子架構</div>
+            <p>Nelson-Siegel 將整條殖利率曲線壓縮為三個可解釋的因子（水準、斜率、曲率），使預測問題從「預測 N 個殖利率」簡化為「預測 3 個因子」。Diebold & Li（2006）進一步將三因子轉為狀態空間模型，用 Kalman Filter 進行動態更新，大幅提升樣本外預測精度，超越當時所有競爭模型。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 15 ──</div>
+            <div class="mc-title">Macro-Finance 模型：將總體經濟資訊融入預測</div>
+            <p>純財務模型僅利用歷史殖利率；Macro-Finance 模型額外引入通膨率、GDP 缺口、失業率等總體變數。Ang & Piazzesi（2003）發現，加入通膨與實體活動因子後，模型能解釋殖利率曲線 85% 的變異，且對長端殖利率的樣本外預測誤差（RMSFE）降低約 15%。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>建立基礎資料集：</strong>蒐集 FRED 或台灣央行的月度殖利率資料（2Y/5Y/10Y）、CPI、工業生產指數（IP）、實質 GDP 成長率，確保時間序列至少 15 年。</div></div>
+            <div class="step-item"><div class="step-body"><strong>擬合 Nelson-Siegel 曲線：</strong>固定 λ（通常設為 0.0609，使因子在 30 個月期限達到最大負載），用 OLS 估計 β₀、β₁、β₂，驗證殘差是否為白噪音。</div></div>
+            <div class="step-item"><div class="step-body"><strong>建立三因子的 VAR/AR 預測模型：</strong>對 β₀(t)、β₁(t)、β₂(t) 分別建立自迴歸模型，或以 VAR 建模因子間交互關係，進行 h=3, 6, 12 個月滾動樣本外預測。</div></div>
+            <div class="step-item"><div class="step-body"><strong>加入總體變數（Macro-Finance）：</strong>將通膨超預期（CPI 實際值 − 市場預期）、產出缺口（HP-filter 後的 GDP 偏離）加入因子狀態方程式，比較加入前後的 RMSFE。</div></div>
+            <div class="step-item"><div class="step-body"><strong>轉化為投資訊號：</strong>若預測 β₁（斜率因子）在未來 6 個月下降（曲線趨平），考慮縮短投資組合 Duration；若預測上升，可適度增加長端配置。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">案例</span>2021–2023 年聯準會升息週期的殖利率預測</div>
+            <div class="case-body">
+              <strong>背景：</strong>2021 年初市場普遍低估通膨持續性，長端殖利率仍在 1.5% 附近。<br/>
+              <strong>Nelson-Siegel 訊號：</strong>β₀（水準因子）自 2021 Q2 起快速攀升，β₁（斜率因子）由正轉負，顯示曲線由陡轉平甚至倒掛。<br/>
+              <strong>Macro-Finance 訊號：</strong>CPI 超預期資料不斷衝擊模型，通膨因子推高整體水準因子預測值。<br/>
+              <strong>結果：</strong>採用此框架的機構投資人在 2021 Q3 已開始縮短 Duration，規避了 2022 年史上最大的公債熊市（Bloomberg Global Aggregate 跌幅超過 16%）。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Diebold & Li (2006)</span> — "Forecasting the Term Structure of Government Bond Yields" — <span class="cite-journal">Journal of Econometrics</span><br/>
+            在 1985–2000 年美國資料的樣本外測試中，動態 Nelson-Siegel 模型的 12 個月預測 RMSFE 比隨機漫步低 26%。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 2 ████ -->
+    <div class="obj-block" id="obj2" data-grp="risk" data-title="利率風險管理 Duration Convexity DV01 壓力測試 LDI SVB">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#e8f5ee;">🛡️</div>
+        <div class="hdr-right">
+          <h2>研究目的 2：利率風險管理</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#1a6b40;border-color:#1a6b40;background:#e8f5ee;">方法 3 Duration/Convexity</span>
+            <span class="mpill" style="color:#1a6b40;border-color:#1a6b40;background:#e8f5ee;">方法 10 DV01/壓力測試</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">利率風險是公債投資最核心、也最容易被低估的風險。</div>
+            <div class="imp-body">
+              2022 年是近代歷史上最嚴峻的利率環境——美國聯準會在一年內升息 525bps，全球公債市場損失超過 11 兆美元。矽谷銀行（SVB）倒閉的核心原因，正是未妥善管理其持有大量長期公債的利率風險。對個人投資人、銀行、保險公司、退休基金而言，理解並量化利率風險是資產保全的第一步。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 3 ──</div>
+            <div class="mc-title">Duration & Convexity：量化利率敏感度的基礎工具</div>
+            <p>Modified Duration 告訴你：殖利率每上升 1%，部位價值約跌多少個百分比。Convexity 修正線性近似的誤差，在大幅利率變動（如 +200bps）時至關重要。Redington（1952）的免疫理論奠定了 LDI 策略的基礎——用 Duration 匹配資產與負債，讓利率波動「兩相抵消」。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 10 ──</div>
+            <div class="mc-title">DV01 & 壓力測試：從靜態指標到動態情境分析</div>
+            <p>DV01（每基點美元價值）讓風險量化到每一個基點的金額，是部位對沖的精確工具。BIS BCBS IRRBB 框架要求銀行對六種極端利率情境進行壓力測試，確保在 +/-200bps 衝擊下資本充足率不低於監管要求。Key Rate Duration（KRD）進一步拆解各期限節點的暴露，用於精確 DV01 中性對沖。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>計算持倉的 Duration 分佈：</strong>對每一檔公債計算 Modified Duration，加權平均得到投資組合總體 Duration。若組合 Duration = 7，代表利率升 1% 損失約 7%。</div></div>
+            <div class="step-item"><div class="step-body"><strong>拆解 DV01（每基點損益）：</strong>公式：DV01 = D_Mod × 市值 × 0.0001。帳上 1 億元、Duration 7 的組合，每基點風險敞口 = 7萬元。</div></div>
+            <div class="step-item"><div class="step-body"><strong>進行 BIS 六情境壓力測試：</strong>模擬平行上移 +200bps、陡峭化（短端 +200bps, 長端不變）、平坦化等情境，計算每種情境下的損益，找出最大損失情境。</div></div>
+            <div class="step-item"><div class="step-body"><strong>對沖工具選擇：</strong>利率期貨（10Y 國庫券期貨）、利率交換（IRS）空頭部位、公債買賣等工具，按照 KRD 分佈進行精確對沖，達成 Duration 中性或目標 Duration。</div></div>
+            <div class="step-item"><div class="step-body"><strong>凸性管理：</strong>在利率波動加劇的環境中，確保組合凸性 ≥ 負債凸性，以在大幅利率變動時獲取非線性保護。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">血淚教訓</span>矽谷銀行（SVB）倒閉：Duration 錯配的代價</div>
+            <div class="case-body">
+              <strong>問題核心：</strong>SVB 將大量短期存款資金投入長期（10Y+）MBS 與公債，組合 Duration 約 5.6 年，但存款負債 Duration 接近 0。<br/>
+              <strong>衝擊發生：</strong>2022 年聯準會升息 425bps，SVB 公債組合市值損失超過 15%，含未實現損失的淨值轉為負值。<br/>
+              <strong>最終結果：</strong>2023 年 3 月銀行擠兌，FDIC 接管，成為美國史上第二大銀行倒閉案。<br/>
+              <strong>啟示：</strong>若 SVB 事先使用 DV01 計算暴露並進行 IRS 對沖，每基點損失可以降低 80% 以上。
+            </div>
+          </div>
+
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">案例</span>2022 年英國退休基金 LDI 危機</div>
+            <div class="case-body">
+              <strong>背景：</strong>英國退休基金普遍採用 LDI 策略，用長期公債作為槓桿抵押品，對沖長期退休金負債。<br/>
+              <strong>觸發：</strong>Liz Truss 政府的「迷你預算案」（2022/9/23）引爆市場拋售，英國 30Y 殖利率在數日內飆升 130bps，LDI 基金抵押品價值大跌，觸發大規模追繳保證金（Margin Call）。<br/>
+              <strong>處置：</strong>英格蘭銀行緊急買入長期公債，穩定殖利率。<br/>
+              <strong>教訓：</strong>凸性在極端情境下的保護不足，強調壓力測試須納入「跳躍式」殖利率情境。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Redington (1952)</span> — "Review of the Principles of Life-Office Valuations" — <span class="cite-journal">Journal of the Institute of Actuaries</span><br/>
+            首創免疫策略，要求資產 Duration = 負債 Duration，且資產 Convexity ≥ 負債 Convexity。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 3 ████ -->
+    <div class="obj-block" id="obj3" data-grp="policy" data-title="貨幣政策效果評估 QE 量化寬鬆 事件研究 聯準會 期限溢酬">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#f0eaf8;">🏦</div>
+        <div class="hdr-right">
+          <h2>研究目的 3：貨幣政策效果評估</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#5a2e8a;border-color:#5a2e8a;background:#f0eaf8;">方法 14 QE 研究</span>
+            <span class="mpill" style="color:#5a2e8a;border-color:#5a2e8a;background:#f0eaf8;">方法 18 事件研究法</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">中央銀行是公債市場最大且最有影響力的參與者，理解其政策效果是投資決策的必要功課。</div>
+            <div class="imp-body">
+              2008 年後，傳統降息空間耗盡，各國央行轉向量化寬鬆（QE）——直接購買公債壓低長端殖利率。從 Fed 的 QE1–QE4、ECB 的 PEPP，到日本的 YCC（殖利率曲線控制），央行政策對公債市場的影響已遠超利率本身。投資人若能提前解讀政策宣告的效果，即可在 FOMC 決策後數分鐘內完成倉位調整。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 14 ──</div>
+            <div class="mc-title">QE 效果研究：分解四大傳導管道</div>
+            <p>QE 對殖利率的影響透過四個管道作用：①投資組合平衡效果（供給減少、殖利率下降）、②信號效果（承諾維持低利率）、③流動性效果、④期限溢酬壓縮。Gagnon et al.（2011）量化 QE1 共八個宣告日，累積壓低 10Y 殖利率 91bps，其中期限溢酬下降 52bps。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 18 ──</div>
+            <div class="mc-title">事件研究法：量化單一政策宣告的即時衝擊</div>
+            <p>高頻事件研究法使用政策宣告前後 30 分鐘的殖利率變動，精確隔離「政策驚喜」成分，避免其他市場噪音干擾。Gürkaynak, Sack & Swanson（2005）發現 FOMC 宣告可拆解為「當期目標驚喜」與「路徑驚喜」，後者對長端殖利率的影響係數高達 3–4 倍，且 R² 達 0.55 以上。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>建立政策事件資料庫：</strong>整理歷次 FOMC / 台灣央行理監事會決策日期，記錄決策內容（升息/降息/不變）及市場預期（以 Fed Funds Futures 或 OIS 利率代理）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>計算「政策驚喜」：</strong>驚喜 = 實際決策利率 − 決策前 30 分鐘的市場隱含利率。僅有驚喜成分才對市場有資訊含量。</div></div>
+            <div class="step-item"><div class="step-body"><strong>測量殖利率異常反應：</strong>取宣告後 30 分鐘內的 2Y、10Y 殖利率變動，對驚喜成分進行 OLS 回歸，估計傳導係數。</div></div>
+            <div class="step-item"><div class="step-body"><strong>拆解 QE 的持久效果：</strong>QE 購買量（相對於市場未償公債比例）對期限溢酬的影響，用 ACM 模型（紐約聯儲）的期限溢酬估計值驗證壓縮幅度。</div></div>
+            <div class="step-item"><div class="step-body"><strong>應用於交易策略：</strong>若估計顯示 QE 宣告後長端殖利率平均下降 15bps，可在 QE 預期宣告前建立長期公債多頭部位，並在宣告後逐步獲利了結。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">案例</span>日本央行 YCC 政策調整（2022–2023）</div>
+            <div class="case-body">
+              <strong>背景：</strong>日本央行自 2016 年起執行 YCC（Yield Curve Control），將 10Y 殖利率上限釘在 0%，後逐步放寬至 +0.5%、+1.0%。<br/>
+              <strong>事件研究結果：</strong>2022 年 12 月 YCC 意外調整宣告後，日本 10Y 殖利率在 1 天內急升 20bps，日元大幅升值，全球公債市場連帶波動。<br/>
+              <strong>投資啟示：</strong>事先建立「YCC 政策調整可能性」的評估框架，追蹤日本 10Y 殖利率是否持續觸碰上限（表明市場壓力累積），可提前預判政策轉向時機。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Gagnon, Raskin, Remache & Sack (2011)</span><br/>
+            "The Financial Market Effects of the Federal Reserve's Large-Scale Asset Purchases"<br/>
+            <span class="cite-journal">International Journal of Central Banking</span><br/>
+            QE1 共 8 個宣告日累積壓低 10Y 殖利率 91bps，其中期限溢酬下降 52bps。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 4 ████ -->
+    <div class="obj-block" id="obj4" data-grp="policy" data-title="財政可持續性 DSA IMF VECM 債務GDP 日本 希臘 台灣">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#fff8e8;">⚖️</div>
+        <div class="hdr-right">
+          <h2>研究目的 4：財政可持續性分析</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#7a4a00;border-color:#c8860a;background:#fff8e8;">方法 13 IMF DSA</span>
+            <span class="mpill" style="color:#7a4a00;border-color:#c8860a;background:#fff8e8;">方法 17 VECM</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">主權債務違約或重組是公債投資的終極尾部風險，財政永續性是評估此風險的核心框架。</div>
+            <div class="imp-body">
+              近 30 年發生過阿根廷（2001）、希臘（2012）、斯里蘭卡（2022）等主權違約，投資人面臨大規模本金損失。即便是發達國家，日本超過 260% 的債務/GDP 比率、美國每次的債務上限危機，都是市場定期關注的財政永續性議題。此研究目的的核心在於：在違約風險真正浮現之前，透過計量分析提前識別財政壓力訊號。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 13 ──</div>
+            <div class="mc-title">IMF DSA 框架：標準化的財政永續性評估工具</div>
+            <p>DSA（Debt Sustainability Analysis）是 IMF 針對主權債務設計的系統性評估架構，核心為債務動態方程式：Δd = (r − g) × d − s。當實質利率 r 超過 GDP 成長率 g 時，需要持續的基本財政盈餘（s > 0）才能穩定債務比率。DSA 加入情境分析（GDP 下降、利率上升、匯率貶值），量化各衝擊下的債務路徑，是評估主權信用的國際標準。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 17 ──</div>
+            <div class="mc-title">VECM：識別利差的長期均衡與崩潰訊號</div>
+            <p>不同國家公債利差（如義大利 vs 德國）在正常時期存在共整合關係（長期均衡）。VECM 中的誤差修正係數（γ）量化利差偏離均衡時的回歸速度。當 γ 趨近於 0（均值回歸機制減弱）甚至共整合關係崩潰時，代表市場認為兩國信用風險差距已結構性擴大，是財政危機的早期預警訊號。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>計算 r − g 差距：</strong>收集目標國家的實質 10Y 公債殖利率（名目殖利率 − 通膨率）與實質 GDP 成長率。若 r − g 長期為正且擴大，財政壓力開始累積。</div></div>
+            <div class="step-item"><div class="step-body"><strong>建立 DSA 基準情境：</strong>以 IMF WEO 預測為基礎，計算未來 5 年的債務/GDP 路徑，標示是否超過「高風險」門檻（新興市場 70%，發達國家 85%）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>進行情境衝擊分析：</strong>模擬 GDP 成長率下降 1 個標準差（通常 −2 至 −3%）、融資利率上升 200bps、匯率貶值 30% 三種情境，觀察 5 年後債務比率的最大值。</div></div>
+            <div class="step-item"><div class="step-body"><strong>VECM 利差監控：</strong>對歐元區成員國（或亞洲新興市場）建立利差的 VECM 模型，每季重新估計誤差修正係數，若回歸速度顯著減緩，發出警示。</div></div>
+            <div class="step-item"><div class="step-body"><strong>設定退出機制：</strong>若 DSA 顯示基準情境下債務比率在未來 3 年上升超過 10%，且 VECM 利差均值回歸崩潰，考慮減持該國公債或購買 CDS 保護。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">歷史案例</span>希臘主權債務危機（2010–2012）</div>
+            <div class="case-body">
+              <strong>DSA 訊號（2009 年底）：</strong>希臘 r − g 差距達 +5%（實質利率 4%，GDP 成長 −1%），基本財政赤字/GDP 達 −10%，債務動態方程式顯示債務比率每年自動上升 15%+ 。<br/>
+              <strong>VECM 訊號：</strong>希臘-德國 10Y 利差在 2009 Q4 急速擴大至 250bps，共整合關係開始崩潰（Johansen 檢定顯示協整向量不穩定）。<br/>
+              <strong>最終結果：</strong>2012 年 PSI 協議，私人債權人接受 53.5% 的本金削減（Haircut），投資人損失超過 2,000 億歐元。<br/>
+              <strong>如果事先使用 DSA+VECM：</strong>早在 2010 年初即可識別危機訊號，在利差達 300bps 前已出場，規避大部分損失。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Blanchard (2019)</span> — "Public Debt and Low Interest Rates" — <span class="cite-journal">American Economic Review</span><br/>
+            當 r &lt; g 時，即使存在財政赤字，債務仍可長期穩定；但 r &gt; g 環境下的財政整頓壓力將大幅增加。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 5 ████ -->
+    <div class="obj-block" id="obj5" data-grp="market" data-title="衍生品定價 CIR HJM ATSM 利率交換 Cap Floor Swaption">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#fdecea;">⚙️</div>
+        <div class="hdr-right">
+          <h2>研究目的 5：利率衍生品定價</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#8b2e2e;border-color:#c04040;background:#fdecea;">方法 5 CIR</span>
+            <span class="mpill" style="color:#8b2e2e;border-color:#c04040;background:#fdecea;">方法 7 HJM</span>
+            <span class="mpill" style="color:#8b2e2e;border-color:#c04040;background:#fdecea;">方法 8 ATSM</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">利率衍生品市場規模超過 500 兆美元，是公債市場的核心對沖與投機工具。</div>
+            <div class="imp-body">
+              利率交換（IRS）是銀行業管理利率風險的最常用工具；利率選擇權（Cap/Floor/Swaption）則廣泛用於結構性商品設計與固定收益投資組合的保護。錯誤的定價模型不僅導致錯誤的對沖比率，更可能在不利環境下造成巨額損失（如 2019 年德意志銀行的 IRS 定價失誤）。選擇適合的模型是衍生品交易部門的基礎建設。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 5 ──</div>
+            <div class="mc-title">CIR 模型：保證非負利率的基礎定價框架</div>
+            <p>CIR 模型（Cox, Ingersoll & Ross, 1985）的擴散項含 √r_t，使利率在 Feller 條件下恆為正值。其封閉解使 Cap/Floor 的定價計算高效，且對應的轉移密度為非中心卡方分配，便於最大概率估計。適用於負利率不現實的環境（如台灣、美國）。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 7 ──</div>
+            <div class="mc-title">HJM 框架：衍生品定價的通用語言</div>
+            <p>HJM 直接對遠期利率的隨機過程建模，其無套利漂移限制自動確保定價的一致性。所有主流利率模型（Vasicek、CIR、BGM/LMM）都是 HJM 框架的特例。實際應用中，LIBOR 市場模型（LMM，HJM 的一個重要子類）是市場標準 Cap/Swaption 定價工具，至今仍廣泛使用（以 SOFR 取代 LIBOR 後）。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 8 ──</div>
+            <div class="mc-title">ATSM：在無套利框架下整合整條曲線資訊</div>
+            <p>仿射模型（ATSM）提供狀態變數的完整動態，使定價者不僅可以對單一到期日的衍生品定價，還能跨期限一致定價（例如：10Y Swaption vs 5Y×5Y Forward Swap）。AFNS 模型（Christensen et al., 2011）是現行央行和大型資產管理公司最常用的無套利殖利率曲線模型。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>釐清定價目標：</strong>確定需要定價的衍生品類型（IRS、Cap/Floor、Swaption、期貨）及關鍵到期期限，選擇適合的模型複雜度（CIR 適合簡單衍生品；HJM/LMM 適合路徑依賴商品）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>校準模型參數：</strong>以市場可觀察的殖利率曲線、Cap 隱含波動率矩陣（Vol Surface）為輸入，用最小化定價誤差的方式校準 κ、θ、σ（CIR）或 σ(t,T) 函數（HJM）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>驗證模型：</strong>用校準後的模型對已知市場價格的標準 Cap（ATM、25-delta）進行定價，確認定價誤差 &lt; 1 個 basis point；再用壓力情境（+200bps）驗證模型行為是否合理。</div></div>
+            <div class="step-item"><div class="step-body"><strong>計算 Greeks 進行動態對沖：</strong>Delta（對利率的敏感度）、Vega（對波動率的敏感度）、Gamma（Delta 的非線性），用以建立動態 Delta 中性對沖組合。</div></div>
+            <div class="step-item"><div class="step-body"><strong>定期重新校準：</strong>在 FOMC 決策日、重大經濟數據發布後重新校準模型，確保定價一致性。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">市場實務</span>LIBOR 轉換 SOFR 的模型調整（2021–2023）</div>
+            <div class="case-body">
+              <strong>背景：</strong>全球利率衍生品從 LIBOR 轉換為 SOFR（美國）、SONIA（英國），名目金額超過 200 兆美元。<br/>
+              <strong>模型挑戰：</strong>LIBOR 為預期利率（forward-looking），SOFR 為隔夜利率（backward-looking），HJM 框架需要調整遠期利率的漂移項，ATSM 需要重新校準狀態變數。<br/>
+              <strong>實務處理：</strong>主要投資銀行採用雙曲線框架（Dual Curve Bootstrapping）重建 SOFR 折現曲線，並使用 HJM 的無套利條件驗證新舊曲線的一致性。<br/>
+              <strong>教訓：</strong>模型轉換若未完整重新校準，可能導致存續衍生品的 PnL 誤差數百萬美元。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Cox, Ingersoll & Ross (1985)</span> — "A Theory of the Term Structure of Interest Rates" — <span class="cite-journal">Econometrica</span><br/>
+            <span class="cite-title">Heath, Jarrow & Morton (1992)</span> — "Bond Pricing and the Term Structure of Interest Rates" — <span class="cite-journal">Econometrica</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 6 ████ -->
+    <div class="obj-block" id="obj6" data-grp="return" data-title="超額報酬預測 相對價值 蝴蝶交易 行為金融 Cochrane Piazzesi Cieslak">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#e8f5ee;">💰</div>
+        <div class="hdr-right">
+          <h2>研究目的 6：超額報酬預測（Alpha 挖掘）</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#1a6b40;border-color:#1a6b40;background:#e8f5ee;">方法 19 相對價值分析</span>
+            <span class="mpill" style="color:#1a6b40;border-color:#1a6b40;background:#e8f5ee;">方法 20 行為金融</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">在流動性高、資訊透明的公債市場尋找超額報酬，需要比市場更精確的定價模型或對行為偏誤的深刻理解。</div>
+            <div class="imp-body">
+              公債市場雖然接近有效市場，但仍存在可預測的超額報酬來源：①期限溢酬的時變性（可用 Cochrane-Piazzesi 因子預測）、②機構投資人的行為偏誤（過度外推通膨）、③市場分割導致的定價錯誤（Swap Spread 異象）。對沖基金、固定收益套利交易部門的核心即在識別這些機會，並在風險控制下系統性獲利。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 19 ──</div>
+            <div class="mc-title">相對價值分析：從曲線形狀偏離中尋找套利機會</div>
+            <p>蝴蝶利差（2×5Y − 2Y − 10Y）衡量殖利率曲線中段相對兩端的隆起程度，當其偏離歷史均值超過 1.5 個標準差時，往往在 3–6 個月內回歸均值，提供穩定的相對價值機會。Cochrane & Piazzesi（2005）構建的 CP 因子（五個遠期利率的特定線性組合）能預測各期限公債的未來超額報酬，樣本外 12 個月預測 R² 達 30–35%，遠超過單一利差指標。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 20 ──</div>
+            <div class="mc-title">行為金融：利用投資人偏誤的系統性定價錯誤</div>
+            <p>Cieslak & Povala（2015）發現機構投資人對通膨趨勢存在過度外推——近期通膨偏高時，他們系統性地高估未來通膨，導致長端殖利率偏高（公債被低估）。這個偏誤產生可預測的期限溢酬均值回歸，構建的交易策略年化 Sharpe Ratio 達 1.2，且在不同子樣本中均穩健。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>計算 Cochrane-Piazzesi（CP）因子：</strong>以 1Y、2Y、3Y、4Y、5Y 遠期利率構建 CP 因子（用歷史 OLS 估計最優線性組合），該因子對各期限公債未來 12 個月超額報酬的預測 t 值通常超過 3。</div></div>
+            <div class="step-item"><div class="step-body"><strong>監控蝴蝶利差的 Z-Score：</strong>計算 2×5Y − 2Y − 10Y 的歷史滾動均值與標準差（建議 3 年窗口）。當 Z-Score &gt; +1.5，做空蝴蝶（空 5Y，多 2Y+10Y）；Z-Score &lt; −1.5，做多蝴蝶。確保 DV01 中性。</div></div>
+            <div class="step-item"><div class="step-body"><strong>識別通膨過度外推訊號：</strong>比較近期 CPI 趨勢（6 個月移動平均）與市場 BEI 隱含通膨預期。若 BEI 大幅高於 Fed 通膨目標且近期 CPI 趨勢正在回落，即通膨過度外推訊號，做多實質公債（TIPS）/ 放空名目公債。</div></div>
+            <div class="step-item"><div class="step-body"><strong>Swap Spread 套利監控：</strong>若 30Y Swap Spread 顯著為負（超過 −15bps），評估是否為監管套利機會（受限於資本充足率要求），建立 Receiver Swaption + 放空公債的組合對沖策略。</div></div>
+            <div class="step-item"><div class="step-body"><strong>風險管理：</strong>以最大 DV01 敞口（佔投資組合的 1%）為上限，並設定 Z-Score 回歸至 ±0.5 時的止盈目標，以及 Z-Score 進一步偏離至 ±2.5 時的停損機制。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">策略案例</span>PIMCO 的「騎乘殖利率曲線」策略（2010–2012）</div>
+            <div class="case-body">
+              <strong>背景：</strong>Fed QE 環境下，美國殖利率曲線維持正斜率且相對陡峭，5Y 殖利率約 2%，2Y 約 0.5%。<br/>
+              <strong>操作：</strong>買入 5Y 公債，預期持有 1 年後以 4Y 殖利率（約 1.6%）出售，獲得約 40bps 的「騎乘報酬」加上票息。<br/>
+              <strong>結果：</strong>同期美股平均回報率約 15%，但公債組合透過槓桿（3×），獲得約 12% 的報酬，波動率僅為股票的 1/5，Sharpe Ratio 超過 1.5。<br/>
+              <strong>關鍵：</strong>CP 因子在 2010–2012 年預測 5Y 公債超額報酬為正，與策略方向一致，提升了進場信心。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Cochrane & Piazzesi (2005)</span> — "Bond Risk Premia" — <span class="cite-journal">American Economic Review</span><br/>
+            CP 因子（遠期利率的線性組合）對未來 12 個月各期限公債超額報酬的預測 R² 達 35%。
+          </div>
+          <div class="cite">
+            <span class="cite-title">Cieslak & Povala (2015)</span> — "Expected Returns in Treasury Bonds" — <span class="cite-journal">Review of Financial Studies</span><br/>
+            通膨過度外推偏誤構建的對沖策略，年化 Sharpe Ratio 1.2，在 1980–2012 年樣本中一貫正報酬。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 7 ████ -->
+    <div class="obj-block" id="obj7" data-grp="market" data-title="衰退預測 殖利率曲線 倒掛 VAR 脈衝反應 Estrella Mishkin">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#fdecea;">🌩️</div>
+        <div class="hdr-right">
+          <h2>研究目的 7：衰退預測與景氣循環定位</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#8b2e2e;border-color:#c04040;background:#fdecea;">方法 1 殖利率曲線</span>
+            <span class="mpill" style="color:#8b2e2e;border-color:#c04040;background:#fdecea;">方法 16 VAR</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">公債殖利率曲線是最具實證支持的免費衰退預測工具，且領先傳統經濟指標 6–18 個月。</div>
+            <div class="imp-body">
+              自 1960 年代以來，每一次美國經濟衰退前均出現殖利率曲線倒掛（10Y &lt; 3M）。對投資人而言，衰退預測的意義在於：提前進行防禦性配置（增持短期公債、減持信用風險）、避免在景氣高峰時過度承擔風險。公債市場是最快反映市場對景氣預期的資產，因此從殖利率曲線反推景氣訊號，是固定收益分析師的必備技能。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 1 ──</div>
+            <div class="mc-title">殖利率曲線倒掛：最簡單也最有效的衰退指標</div>
+            <p>Estrella & Mishkin（1998）的 Probit 模型發現，10Y-3M 利差對未來 4–6 季衰退概率的預測力，優於股市報酬、貨幣供給、領先指標合成指數。更重要的是，此指標無需複雜計算——投資人只需追蹤兩個殖利率的差值即可獲得強力的先行訊號。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 16 ──</div>
+            <div class="mc-title">VAR：量化利差衝擊對總體經濟的傳導強度</div>
+            <p>VAR 模型可量化「殖利率曲線形狀」的衝擊如何透過信貸管道、投資意願、消費信心等途徑傳導至 GDP 和就業。Bernanke & Blinder（1992）的 SVAR 分析確認，貨幣緊縮衝擊（利率上升）在 6–18 個月後導致實體產出下降約 0.5%，配合殖利率曲線形狀提供更完整的景氣預測框架。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>建立衰退預測儀表板：</strong>每日追蹤四個關鍵利差：10Y-3M（學術研究首選）、10Y-2Y（市場最常引用）、5Y-3M（近期研究偏好）、18M-3M Forward（2023 年 Fed 研究員提出的改進版）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>計算衰退概率：</strong>使用 Estrella-Mishkin Probit 模型：P(recession t+4 quarters) = Φ(α + β × spread)，其中 α = -0.6213，β = -0.0753（原始美國估計值）。若機率 &gt; 30%，進入防禦模式。</div></div>
+            <div class="step-item"><div class="step-body"><strong>VAR 動態追蹤：</strong>每季重新估計 [FFR, CPI, IP, 10Y-3M Spread] 四變數 VAR，計算脈衝反應函數（IRF），確認利差衝擊對工業生產的傳導係數方向與強度是否改變。</div></div>
+            <div class="step-item"><div class="step-body"><strong>景氣定位與資產配置：</strong>衰退概率 &lt; 15%：正常配置；15%–30%：縮短 Duration，增持短期公債；&gt; 30%：防禦性配置，增持 2Y 以下公債、減持信用債與股票；倒掛超過 3 個月：開始系統性降低風險敞口。</div></div>
+            <div class="step-item"><div class="step-body"><strong>追蹤「重新陡峭化」訊號：</strong>歷史上衰退往往在曲線「從倒掛恢復正斜率」後不久發生（聯準會降息、短端大幅下行）。此時公債多頭是最佳避險部位。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">最新案例</span>2022–2023 年美國殖利率曲線倒掛</div>
+            <div class="case-body">
+              <strong>倒掛開始：</strong>2022 年 7 月 5 日，10Y-3M 利差轉負，最深達 −188bps（2023 年 5 月）。<br/>
+              <strong>Estrella-Mishkin Probit 預測（2023 Q2）：</strong>衰退概率達 68–70%，為 2008 年金融海嘯以來最高。<br/>
+              <strong>市場反應：</strong>機構投資人大幅縮短 Duration，2Y 公債殖利率一度達 5.1%（2023 年 10 月），吸引大量資金湧入短端。<br/>
+              <strong>結果（截至 2024 年）：</strong>衰退未如預期發生（「無著陸」情境），顯示本次倒掛的傳導效果受到財政擴張和移民帶動的勞動力增長抵消——提醒投資人利差指標需搭配總體因子模型（方法 15）進行交叉驗證。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Estrella & Mishkin (1998)</span> — "Predicting U.S. Recessions: Financial Variables as Leading Indicators" — <span class="cite-journal">Review of Economics and Statistics</span><br/>
+            10Y-3M 利差的 Probit 模型對美國 1960–1995 年所有衰退均有顯著預警能力（Pseudo-R² = 0.30）。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ████ OBJ 8 ████ -->
+    <div class="obj-block" id="obj8" data-grp="risk" data-title="信用分析 CDS 主權評等 VECM 利差 歐債危機 新興市場">
+      <div class="obj-block-header" onclick="toggleObj(this)">
+        <div class="obj-num-badge" style="background:#f0eaf8;">🔍</div>
+        <div class="hdr-right">
+          <h2>研究目的 8：信用風險分析與利差研究</h2>
+          <div class="method-pills">
+            <span class="mpill" style="color:#5a2e8a;border-color:#7a3e8a;background:#f0eaf8;">方法 9 CDS/信評</span>
+            <span class="mpill" style="color:#5a2e8a;border-color:#7a3e8a;background:#f0eaf8;">方法 17 VECM 利差</span>
+          </div>
+        </div>
+        <span class="chevron-obj">▼</span>
+      </div>
+      <div class="obj-block-body">
+
+        <div class="inner-section">
+          <div class="inner-title">🌟 為什麼這個研究目的重要</div>
+          <div class="importance-box">
+            <div class="imp-lead">信用利差是主權與企業公債的超額報酬核心，也是系統性金融風險的早期預警指標。</div>
+            <div class="imp-body">
+              在「無風險」的主權公債假設之外，現實中各國政府的信用品質存在巨大差異。亞洲投資人若持有土耳其里拉計價公債或阿根廷美元債，信用風險的重要性遠超利率風險。即便是歐元區成員國，義大利與德國之間的 10Y 利差也是衡量歐元區金融穩定的關鍵晴雨表。正確分析信用利差的成因（信用風險 vs 流動性溢酬 vs 傳染效應）是投資級與高收益公債配置的基礎。
+            </div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">🔗 研究方法與目的的連結</div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 9 ──</div>
+            <div class="mc-title">CDS 利差：市場對信用風險的即時定價與分解</div>
+            <p>主權 CDS 利差提供比信評更即時的信用風險訊息（信評調整通常滯後市場 3–6 個月）。Longstaff et al.（2011）分析 26 國 CDS 資料，發現 64% 的主權信用風險可由全球共同因子（VIX、全球流動性）解釋，地方財政只解釋約 36%——代表信用危機往往是全球性的，而非純粹地方事件，投資組合的跨國分散效果在危機時會大幅降低。</p>
+          </div>
+
+          <div class="method-connect">
+            <div class="mc-label">方法 17 ──</div>
+            <div class="mc-title">VECM 利差分析：識別均值回歸與結構性利差擴大</div>
+            <p>在正常市場環境下，A 國與 B 國的公債利差圍繞某一長期均值波動（共整合關係）。VECM 的誤差修正係數（γ）量化每個月有多少比例的偏離會被修正。當 |γ| 顯著縮小（均值回歸減弱）或 Johansen 檢定顯示共整合消失時，代表市場已將兩國的信用品質視為不同制度，利差具有持久性擴大的風險。</p>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📋 投資人應如何操作：分析步驟</div>
+          <div class="step-list">
+            <div class="step-item"><div class="step-body"><strong>建立利差分解框架：</strong>公債殖利率利差 = 信用溢酬 + 流動性溢酬 + 通膨差異 + 匯率風險溢酬。用 CDS 利差代理純信用成分，用買賣價差衡量流動性成分，分離各因素的貢獻。</div></div>
+            <div class="step-item"><div class="step-body"><strong>計算 CDS 隱含違約概率：</strong>違約概率 = CDS Spread / (1 − 回收率)，假設回收率 40%，CDS = 200bps 對應年化違約概率 3.3%。監控隱含違約概率的趨勢（3 個月變化率 &gt; +50% 為警示訊號）。</div></div>
+            <div class="step-item"><div class="step-body"><strong>VECM 滾動估計：</strong>對關注的公債利差（如新興市場 vs 美國）進行 5 年滾動窗口的 Johansen 共整合檢定，並追蹤誤差修正係數 γ 的時序變化。</div></div>
+            <div class="step-item"><div class="step-body"><strong>交叉驗證信評訊號：</strong>比較三大機構的評等展望（Positive/Stable/Negative/Watch），若評等展望轉為 Negative 但 CDS 利差尚未完全反映，可能存在 CDS 套利機會。</div></div>
+            <div class="step-item"><div class="step-body"><strong>建立信用監控儀表板：</strong>每週追蹤：①5Y CDS 利差水準及變化；②CDS 相對公債殖利率利差（CDS Basis）；③VECM 誤差修正係數；④評等機構展望變化；⑤外匯儲備 / 短期外債比率（流動性指標）。</div></div>
+          </div>
+        </div>
+
+        <div class="inner-section">
+          <div class="inner-title">📌 實際案例佐證</div>
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">案例</span>斯里蘭卡主權違約（2022）的早期訊號</div>
+            <div class="case-body">
+              <strong>背景：</strong>斯里蘭卡 2022 年 4 月宣告外債違約，成為亞洲近 20 年來最大主權違約事件。<br/>
+              <strong>CDS 訊號（2021 年底）：</strong>斯里蘭卡 5Y CDS 利差從 700bps 急升至 2000bps，隱含年化違約概率超過 33%（回收率假設 40%）。<br/>
+              <strong>DSA 訊號：</strong>r − g 差距達 +8%，外匯儲備僅剩 15 億美元（不足 1 個月進口）。<br/>
+              <strong>VECM 訊號：</strong>斯里蘭卡與同評級新興市場（BB 級）的利差共整合關係於 2021 Q3 崩潰。<br/>
+              <strong>教訓：</strong>三種訊號均在 2021 Q4 同時觸發，若設置系統性預警機制，投資人可在違約前 6 個月出清，規避大部分損失。
+            </div>
+          </div>
+
+          <div class="case-block">
+            <div class="case-header"><span class="case-tag">理論案例</span>義大利-德國利差（BTP-Bund Spread）作為歐元區風向球</div>
+            <div class="case-body">
+              <strong>正常時期：</strong>BTP-Bund 10Y 利差在 100–150bps 間共整合，VECM 每月修正約 20% 的偏離。<br/>
+              <strong>歐債危機（2011–2012）：</strong>利差在 4 個月內從 200bps 飆升至 575bps，Johansen 檢定顯示共整合向量不穩定。德拉吉「whatever it takes」宣言後，均值回歸機制恢復。<br/>
+              <strong>近期（2022–2023）：</strong>BTP-Bund 利差在 ECB 升息週期中再度走寬，但低於 2012 年高峰，VECM 均值回歸係數仍顯著，顯示市場尚未判定義大利債務具結構性危機性質。
+            </div>
+          </div>
+
+          <div class="cite">
+            <span class="cite-title">Longstaff, Pan, Pedersen & Singleton (2011)</span><br/>
+            "How Sovereign is Sovereign Credit Risk?"<br/>
+            <span class="cite-journal">American Economic Journal: Macroeconomics</span><br/>
+            64% 的主權信用風險由全球因子解釋，強調信用分析需同時追蹤全球流動性環境。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SUMMARY TABLE -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:40px;">
+      <div style="font-size:.8rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">綜合對照表：研究目的 × 方法 × 適用投資人</div>
+      <div class="tbl-wrap">
+        <table>
+          <tr>
+            <th>研究目的</th>
+            <th>核心方法</th>
+            <th>關鍵指標</th>
+            <th>主要適用者</th>
+            <th>時間週期</th>
+          </tr>
+          <tr>
+            <td>📈 預測公債殖利率</td>
+            <td>Nelson-Siegel + Macro-Finance</td>
+            <td>β₀/β₁/β₂ 因子、通膨缺口</td>
+            <td>基金經理、策略師</td>
+            <td>3–12 個月</td>
+          </tr>
+          <tr>
+            <td>🛡️ 利率風險管理</td>
+            <td>Duration/Convexity + DV01</td>
+            <td>DV01、KRD、凸性</td>
+            <td>銀行、保險、退休基金</td>
+            <td>即時</td>
+          </tr>
+          <tr>
+            <td>🏦 貨幣政策評估</td>
+            <td>QE 研究 + 事件研究</td>
+            <td>期限溢酬、政策驚喜</td>
+            <td>央行研究員、策略師</td>
+            <td>宣告日當日</td>
+          </tr>
+          <tr>
+            <td>⚖️ 財政可持續性</td>
+            <td>IMF DSA + VECM</td>
+            <td>r − g 差距、利差均值回歸係數</td>
+            <td>主權債投資人、評等機構</td>
+            <td>季度/年度</td>
+          </tr>
+          <tr>
+            <td>⚙️ 衍生品定價</td>
+            <td>CIR + HJM + ATSM</td>
+            <td>隱含波動率、Greeks</td>
+            <td>自營交易、結構性商品</td>
+            <td>即時/日</td>
+          </tr>
+          <tr>
+            <td>💰 超額報酬預測</td>
+            <td>相對價值 + 行為金融</td>
+            <td>CP 因子、蝴蝶 Z-Score</td>
+            <td>對沖基金、固收套利</td>
+            <td>1–12 個月</td>
+          </tr>
+          <tr>
+            <td>🌩️ 衰退預測</td>
+            <td>殖利率曲線 + VAR</td>
+            <td>10Y-3M 利差、Probit 概率</td>
+            <td>資產配置師、CIO</td>
+            <td>6–18 個月</td>
+          </tr>
+          <tr>
+            <td>🔍 信用分析</td>
+            <td>CDS/評等 + VECM</td>
+            <td>CDS 利差、隱含違約概率</td>
+            <td>信評分析師、EM 投資人</td>
+            <td>月度/季度</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<div id="back-top" title="回到頂端">↑</div>
+
+<script>
+  /* ─── OVERVIEW GRID ─── */
+  const objs = [
+    {id:'obj1', icon:'📈', title:'預測公債殖利率', methods:'方法 6 + 15', color:'#1a3a8a'},
+    {id:'obj2', icon:'🛡️', title:'利率風險管理', methods:'方法 3 + 10', color:'#1a6b40'},
+    {id:'obj3', icon:'🏦', title:'貨幣政策效果評估', methods:'方法 14 + 18', color:'#5a2e8a'},
+    {id:'obj4', icon:'⚖️', title:'財政可持續性', methods:'方法 13 + 17', color:'#7a4a00'},
+    {id:'obj5', icon:'⚙️', title:'衍生品定價', methods:'方法 5 + 7 + 8', color:'#8b2e2e'},
+    {id:'obj6', icon:'💰', title:'超額報酬預測', methods:'方法 19 + 20', color:'#1a6b40'},
+    {id:'obj7', icon:'🌩️', title:'衰退預測', methods:'方法 1 + 16', color:'#8b2e2e'},
+    {id:'obj8', icon:'🔍', title:'信用分析', methods:'方法 9 + 17', color:'#5a2e8a'},
+  ];
+
+  const grid = document.getElementById('obj-grid');
+  objs.forEach(o => {
+    const c = document.createElement('div');
+    c.className = 'obj-chip';
+    c.style.setProperty('--chip-color', o.color);
+    c.innerHTML = `
+      <style>.obj-chip:nth-child(${objs.indexOf(o)+1})::before{background:${o.color};}</style>
+      <div class="chip-icon">${o.icon}</div>
+      <div class="chip-title">${o.title}</div>
+      <div class="chip-methods">${o.methods}</div>
+    `;
+    c.onclick = () => {
+      document.getElementById(o.id).scrollIntoView({behavior:'smooth',block:'start'});
+      const hdr = document.querySelector(`#${o.id} .obj-block-header`);
+      if (!hdr.classList.contains('open')) toggleObj(hdr);
+    };
+    grid.appendChild(c);
+  });
+
+  /* ─── TOGGLE ─── */
+  function toggleObj(header) {
+    const body = header.nextElementSibling;
+    const ch   = header.querySelector('.chevron-obj');
+    const open = body.classList.contains('open');
+    body.classList.toggle('open', !open);
+    ch.classList.toggle('open', !open);
+  }
+
+  /* ─── FILTER ─── */
+  document.querySelectorAll('.fb').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.fb').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const grp = btn.dataset.grp;
+      document.querySelectorAll('.obj-block').forEach(block => {
+        block.classList.toggle('hidden', grp !== 'all' && block.dataset.grp !== grp);
+      });
+    });
+  });
+
+  /* ─── SIDEBAR SEARCH ─── */
+  document.getElementById('sb-search').addEventListener('input', function() {
+    const q = this.value.trim().toLowerCase();
+    document.querySelectorAll('.nav-obj').forEach(n => {
+      n.style.display = (!q || n.textContent.toLowerCase().includes(q)) ? '' : 'none';
+    });
+    document.querySelectorAll('.obj-block').forEach(block => {
+      if (!q) {
+        block.classList.remove('hidden');
+      } else {
+        const match = (block.dataset.title || '').toLowerCase().includes(q)
+                   || block.textContent.toLowerCase().includes(q);
+        block.classList.toggle('hidden', !match);
+      }
+    });
+    if (!q) {
+      document.querySelector('.fb[data-grp="all"]').click();
+    }
+  });
+
+  /* ─── ACTIVE NAV ─── */
+  const navLinks = document.querySelectorAll('.nav-obj');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = '#' + e.target.id;
+        navLinks.forEach(n => n.classList.toggle('active', n.getAttribute('href') === id));
+      }
+    });
+  }, {rootMargin: '-15% 0px -65% 0px'});
+
+  document.querySelectorAll('.obj-block[id]').forEach(el => io.observe(el));
+
+  /* ─── NAV CLICK ─── */
+  navLinks.forEach(n => {
+    n.addEventListener('click', e => {
+      e.preventDefault();
+      const t = document.querySelector(n.getAttribute('href'));
+      if (t) {
+        t.scrollIntoView({behavior:'smooth', block:'start'});
+        const hdr = t.querySelector('.obj-block-header');
+        if (hdr && !hdr.classList.contains('open')) toggleObj(hdr);
+      }
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('show');
+    });
+  });
+
+  /* ─── BACK TOP ─── */
+  const bt = document.getElementById('back-top');
+  window.addEventListener('scroll', () => bt.classList.toggle('show', scrollY > 500));
+  bt.addEventListener('click', () => scrollTo({top:0, behavior:'smooth'}));
+
+  /* ─── HAMBURGER ─── */
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('overlay').classList.add('show');
+  });
+
+  document.getElementById('overlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  });
+</script>
+</body>
+</html>
