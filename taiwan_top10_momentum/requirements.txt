@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7
+requests>=2.28
+
+# Optional, only needed if you switch to a real market data source:
+# yfinance>=0.2.40      # YahooFinanceDataSource (tickers like 2330.TW / 6547.TWO)
+# (FinMindDataSource uses `requests` only, no extra dependency)
